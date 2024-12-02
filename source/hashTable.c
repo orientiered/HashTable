@@ -34,7 +34,7 @@ enum hashTableStatus hashTableDtor(hashTable_t *table) {
     return HASH_TABLE_SUCCESS;
 }
 
-enum hashTableStatus hashTableInsert(hashTable_t *table, const char *name, const void *elem, size_t elemSize) {
+hashTableNode_t *hashTableInsert(hashTable_t *table, const char *name, const void *elem, size_t elemSize) {
     hashTablePrint("Inserting '%s', hash = %zu\n", name, strHash(name));
 
     uint64_t idx = strHash(name) % table->size;
@@ -44,14 +44,12 @@ enum hashTableStatus hashTableInsert(hashTable_t *table, const char *name, const
     hashTableNode_t *nullNode = NULL;
     hashTableNode_t **prev = &nullNode;
     while (*current) {
-        printf("current: %p, prev: %p\n", *current, *prev);
         if (strcmp(name, (*current)->name) == 0)
-            return HASH_TABLE_SUCCESS;
+            return *current;
 
         prev = current;
         current = &(*current)->next;
     }
-    printf("current: %p, prev: %p\n", *current, *prev);
 
     *current = (hashTableNode_t *)calloc(1, sizeof(hashTableNode_t));
 
@@ -63,10 +61,8 @@ enum hashTableStatus hashTableInsert(hashTable_t *table, const char *name, const
     strcpy((*current)->name, name);
 
     if (*prev) (*prev)->next = *current;
-    printf("current: %p, prev: %p\n", *current, *prev);
-    if (*prev)printf("prev->next = %p\n", (*prev)->next);
 
-    return HASH_TABLE_SUCCESS;
+    return *current;
 }
 
 void *hashTableFind(hashTable_t *table, const char *name) {

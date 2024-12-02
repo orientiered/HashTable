@@ -24,7 +24,7 @@ hashTable_t hashTableCtor(size_t size);
 enum hashTableStatus hashTableDtor(hashTable_t *table);
 
 /// @brief Insert element in hash table. If element with given name already exists, nothing is done
-enum hashTableStatus hashTableInsert(hashTable_t *table, const char *name, const void *elem, size_t elemSize);
+hashTableNode_t *hashTableInsert(hashTable_t *table, const char *name, const void *elem, size_t elemSize);
 
 void *hashTableFind(hashTable_t *table, const char *name);
 
