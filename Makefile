@@ -53,7 +53,7 @@ $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY:clean compile_commands
+.PHONY:clean compile_commands test_file
 
 clean:
 	rm build/*
@@ -61,3 +61,11 @@ clean:
 compile_commands:
 	make clean
 	bear -- make BUILD=DEBUG
+
+TESTS = 10000000
+test_file:
+	g++ generateTest.c -o generateTest.exe
+	g++ prepareText.c  -o prepareText.exe
+	./prepareText.exe test_raw.txt testStrings.txt
+	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) 0.9
+
