@@ -38,7 +38,7 @@ endif
 override CFLAGS += -I./$(HDR_DIR)
 
 
-hashMap.exe: $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/main.o
+hashMap.exe: $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/main.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 static: $(OBJ_DIR)/hashTable.o
@@ -49,7 +49,11 @@ $(OBJ_DIR)/hashTable.o: $(SRC_DIR)/hashTable.c $(HDR_DIR)/hashTable.h
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h
+$(OBJ_DIR)/perfTester.o: $(SRC_DIR)/perfTester.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTester.h
+	mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTester.h
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 

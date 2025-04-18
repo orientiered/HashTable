@@ -9,7 +9,19 @@
 #define FREE(ptr) free(ptr); ptr = NULL
 #define CALLOC(type, nmemb) (type *) calloc(nmemb, sizeof(type))
 
-static hash_t djb2(const void *ptr) {
+hash_t checksum(const void *ptr)
+{
+    const char *cptr = (const char *) ptr;
+    hash_t hash = 0;
+    while (*cptr) {
+        hash += (hash_t)*cptr;
+        cptr++;
+    }
+    return hash;
+}
+
+hash_t djb2(const void *ptr)
+{
     const char *cptr = (const char *) ptr;
 
     hash_t hash = 5381;
@@ -248,7 +260,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
     }
 
     size_t size = 0;
-    for (int bucketIdx = 0; bucketIdx < table->bucketsCount; bucketIdx++) {
+    for (size_t bucketIdx = 0; bucketIdx < table->bucketsCount; bucketIdx++) {
         hashTableNode_t *node = table->buckets[bucketIdx].next;
 
         while (node) {
@@ -257,17 +269,17 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
 
             if (!node->key) {
-                errprintf("Found node without key in bucket %d\n", bucketIdx);
+                errprintf("Found node without key in bucket %zu\n", bucketIdx);
                 return HT_NO_KEY;
             }
 
             if (table->valSize > 0 && !node->value) {
-                errprintf("Found node without value in bucket %d (valSize > 0)\n", bucketIdx);
+                errprintf("Found node without value in bucket %zu (valSize > 0)\n", bucketIdx);
                 return HT_NO_VALUE;
             }
 
             if (hash % table->bucketsCount != bucketIdx) {
-                errprintf("Key %s with hash %ju must be in bucket %d, but lays in bucket %d\n",
+                errprintf("Key %s with hash %ju must be in bucket %ju, but lays in bucket %zu\n",
                              node->key,    hash,     hash % table->bucketsCount,     bucketIdx);
                 return HT_WRONG_HASH;
             }
@@ -321,7 +333,48 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
 
 hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
 {
-    TODO("implement hashTableCalcDistribution");
+    assert(table);
+    assert(table->bucketsCount > 0);
+    assert(table->buckets);
+
+    const int BARS_COUNT = 20;
+    const int BAR_LENGTH = 20;
+    int64_t bars[BARS_COUNT] = {0};
+
+    int64_t sumOfSquares = 0, sum = 0;
+    for (size_t idx = 0; idx < table->bucketsCount; idx++) {
+        // calculating length of the list in current bucket
+        int64_t bucketLen = 0;
+        hashTableNode_t *node = table->buckets[idx].next;
+        while(node) {
+            bucketLen++;
+            node = node->next;
+        }
+
+        sumOfSquares += bucketLen * bucketLen;
+        sum          += bucketLen;
+
+        // Adding length of the list to corresponding bar in the chart
+        bars[idx * BARS_COUNT / table->bucketsCount] += bucketLen;
+    }
+
+    float meanOfSquares = (float) sumOfSquares / (float) table->bucketsCount;
+    float mean = (float) sum / (float) table->bucketsCount;
+
+    float disp = meanOfSquares - mean*mean;
+
+    fprintf(stderr, "Average elements in bucket: %.2f\n"
+                    "Dispersion: %.2f\n", mean, disp);
+
+    fprintf(stderr, "=========== Distribution bar chart =========\n");
+    for (int barIdx = 0; barIdx < BARS_COUNT; barIdx++) {
+        int64_t filledChars = BARS_COUNT * BAR_LENGTH * bars[barIdx] / sum;
+        fputc('|', stderr);
+        while((filledChars--) > 0) fputc('#', stderr);
+        fputc('\n', stderr);
+    }
+    fprintf(stderr, "============================================\n");
+
     return HT_SUCCESS;
 }
 

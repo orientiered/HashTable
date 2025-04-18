@@ -1,0 +1,39 @@
+#ifndef PERF_TESTER_H
+#define PERF_TESTER_H
+
+#include <stdint.h>
+#include <stdio.h>
+#include <time.h>
+
+typedef struct {
+    char *data;
+    int64_t length;
+    char **words;
+    int64_t wordsCount;
+} text_t;
+
+typedef struct {
+    struct timespec start;
+    struct timespec end;
+    int64_t elapsed;
+} codeClock_t;
+
+void codeClockStart(codeClock_t *clk);
+int64_t codeClockStop(codeClock_t *clk);
+
+double codeClockGetTimeSec(codeClock_t *clk);
+double codeClockGetTimeMs (codeClock_t *clk);
+
+int64_t getFileLen(FILE *file);
+
+text_t readFileSplit(const char *fileName);
+
+void testPerformance(const char *stringsFile, const char *requestsFile);
+
+
+#define MEASURE_TIME(clock, ...) \
+    codeClockStart(&clock);      \
+    __VA_ARGS__                  \
+    codeClockStop(&clock);
+
+#endif
