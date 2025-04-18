@@ -112,12 +112,16 @@ hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t buc
     if (hash == NULL)
         table->hash = djb2;
 
+    _VERIFY(table, HT_ERROR);
+
     return HT_SUCCESS;
 }
 
 hashTableStatus_t hashTableDtor(hashTable_t *table)
 {
     assert(table);
+
+    _VERIFY(table, HT_ERROR);
 
     for (size_t idx = 0; idx < table->bucketsCount; idx++) {
         hashTableNode_t *nextNode = (table->buckets + idx)->next;
@@ -143,6 +147,8 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
 
     assert(table->buckets);
     assert(table->bucketsCount > 0);
+
+    _VERIFY(table, HT_ERROR);
 
     hash_t keyHash   = table->hash(key);
     size_t bucketIdx = keyHash % table->bucketsCount;
@@ -172,7 +178,34 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
 /// @return Ptr to element or NULL in case of error
 void *hashTableAccess(hashTable_t *table, const char *key)
 {
-    return NULL;
+    assert(table);
+    assert(key);
+
+    assert(table->buckets);
+    assert(table->bucketsCount > 0);
+
+    _VERIFY(table, NULL);
+
+    hash_t keyHash   = table->hash(key);
+    size_t bucketIdx = keyHash % table->bucketsCount;
+
+    hashTableNode_t *node = table->buckets + bucketIdx;
+
+    while (node) {
+        if (node->key && strcmp(node->key, key) == 0 )
+            break;
+
+        node = node->next;
+    }
+
+
+    if (!node) {
+        table->size++;
+        _ERR_RET_PTR(allocateNode(table, key, bucketIdx));
+        node = (table->buckets + bucketIdx)->next;
+    }
+
+    return node->value;
 }
 
 void *hashTableFind(hashTable_t *table, const char *key)
@@ -181,6 +214,8 @@ void *hashTableFind(hashTable_t *table, const char *key)
     assert(key);
     assert(table->buckets);
     assert(table->bucketsCount);
+
+    _VERIFY(table, NULL);
 
     hash_t keyHash   = table->hash(key);
     size_t bucketIdx = keyHash % table->bucketsCount;
@@ -199,6 +234,55 @@ void *hashTableFind(hashTable_t *table, const char *key)
 
 hashTableStatus_t hashTableVerify(hashTable_t *table)
 {
+    if (!table)
+        return HT_ERROR;
+
+    if (table->bucketsCount == 0) {
+        errprintf("Table is probably not initialized: bucketsCount = 0\n");
+        return HT_NO_INIT;
+    }
+
+    if (!table->buckets) {
+        errprintf("Buckets ptr is null");
+        return HT_MEMORY_ERROR;
+    }
+
+    size_t size = 0;
+    for (int bucketIdx = 0; bucketIdx < table->bucketsCount; bucketIdx++) {
+        hashTableNode_t *node = table->buckets[bucketIdx].next;
+
+        while (node) {
+            size++;
+            hash_t hash = table->hash(node->key);
+
+
+            if (!node->key) {
+                errprintf("Found node without key in bucket %d\n", bucketIdx);
+                return HT_NO_KEY;
+            }
+
+            if (table->valSize > 0 && !node->value) {
+                errprintf("Found node without value in bucket %d (valSize > 0)\n", bucketIdx);
+                return HT_NO_VALUE;
+            }
+
+            if (hash % table->bucketsCount != bucketIdx) {
+                errprintf("Key %s with hash %ju must be in bucket %d, but lays in bucket %d\n",
+                             node->key,    hash,     hash % table->bucketsCount,     bucketIdx);
+                return HT_WRONG_HASH;
+            }
+
+
+            node = node->next;
+        }
+
+    }
+
+    if (size != table->size) {
+        errprintf("Expected size to be %zu, but found only %zu elements\n", table->size, size);
+        return HT_WRONG_SIZE;
+    }
+
     return HT_SUCCESS;
 }
 
@@ -220,7 +304,13 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
         hashTableNode_t *current = (table->buckets + bucketIdx)->next;
         if (current) errprintf("\t#%zu \n", bucketIdx);
         while (current) {
-            errprintf("\t\t\"%s\" -> %p\n", current->key, current->value);
+            errprintf("\t\t\"%s\" -> [%p]", current->key, current->value);
+            HDBG(
+                if (table->printElem ) {
+                    table->printElem(current->value);
+                }
+            )
+            errprintf("\n");
             current = current->next;
         }
 
@@ -229,8 +319,9 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
     return HT_SUCCESS;
 }
 
-hashTableStatus_t hashTableCalcDistibution(hashTable_t *table)
+hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
 {
+    TODO("implement hashTableCalcDistribution");
     return HT_SUCCESS;
 }
 

@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define errprintf(...) fprintf(stderr, __VA_ARGS__)
-
+#define TODO(msg) do {errprintf("TODO at %s:%d : %s", __FILE__, __LINE__, msg); abort();} while(0)
 #ifndef NDEBUG
     #define HDBG(...) __VA_ARGS__
     #define hprintf(...) fprintf(stderr, __VA_ARGS__)
@@ -32,13 +32,26 @@ typedef struct hashTable {
     size_t size;
 
     hashFunc_t hash;
+    HDBG(int (*printElem)(const void *ptr);)
 } hashTable_t;
+
+HDBG(
+
+static int printInt(const void *ptr) {return errprintf("%d", *(const int *)ptr);}
+static int printStr(const void *ptr) {return errprintf("%s", (const char*)ptr);}
+static int printFloat(const void *ptr) {return errprintf("%f", *(const float*)ptr);}
+
+)
 
 typedef enum hashTableStatus {
     HT_SUCCESS      = 0,
     HT_MEMORY_ERROR = 1,
     HT_WRONG_HASH   = 2,
-    HT_ERROR        = 3
+    HT_WRONG_SIZE   = 3,
+    HT_NO_INIT      = 4,
+    HT_NO_KEY       = 5,
+    HT_NO_VALUE     = 6,
+    HT_ERROR
 } hashTableStatus_t;
 
 
@@ -56,7 +69,7 @@ void *hashTableFind(hashTable_t *table, const char *key);
 
 hashTableStatus_t hashTableVerify(hashTable_t *table);
 hashTableStatus_t hashTableDump(hashTable_t *table);
-hashTableStatus_t hashTableCalcDistibution(hashTable_t *table);
+hashTableStatus_t hashTableCalcDistribution(hashTable_t *table);
 
 
 /*========================== Debugging tools =================================*/
@@ -85,5 +98,32 @@ static void htStackTrace(const char *file, int line, const char *function) {
             return status;                      \
         }                                       \
     }
+
+
+#define _ERR_RET_PTR(expr) \
+    {                                           \
+        hashTableStatus_t status = (expr);      \
+        if (status != HT_SUCCESS) {             \
+            htStackTrace(__FILE__, __LINE__, __PRETTY_FUNCTION__); \
+            return NULL;                        \
+        }                                       \
+    }
+
+
+// #define HASH_TABLE_VERIFY
+
+#ifdef HASH_TABLE_VERIFY
+    #define _VERIFY(table, ret) do {                             \
+        hashTableStatus_t status = hashTableVerify(table);  \
+        if (status != HT_SUCCESS) {                         \
+            hashTableDump(table);                           \
+            htStackTrace(__FILE__, __LINE__, __PRETTY_FUNCTION__); \
+            return ret;                                     \
+        }                                                   \
+    } while(0)
+
+#else
+    #define _VERIFY(table, ret)
+#endif
 
 #endif
