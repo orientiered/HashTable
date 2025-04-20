@@ -14,10 +14,16 @@
     #define hprintf(...)
 #endif
 
+// #define FAST_STRCMP
+
+static const size_t KEY_ALIGNMENT = 32; // alignment of keys in bytes
+static const size_t SMALL_STR_LEN = 32;
+
 typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
     char  *key;
+    uint32_t len;
 } hashTableNode_t;
 
 typedef uint64_t hash_t;

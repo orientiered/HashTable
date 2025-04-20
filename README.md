@@ -72,4 +72,6 @@ Let's find what bottlenecks performance. I will use `perf` with `flamegraph`.
 
 ![no_opt](flame1.svg)
 
-Most part of the time takes strcmp
+Most part of the time takes strcmp, search function and crc32.
+
+We will start optimizations with strcmp. Most of the words are shorter than 32 letters, so we can use SIMD instructions to compare short strings faster. To make things easier, i will add field with length of the string.

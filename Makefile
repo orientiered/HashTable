@@ -23,7 +23,7 @@ ASAN_FLAGS := -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,
 
 OTHER := -fcheck-new -fsized-deallocation -fstack-protector -fstrict-overflow -flto-odr-type-merging -fno-omit-frame-pointer -Wlarger-than=8192 -Wstack-usage=8192 -pie -fPIE -Werror=vla
 
-CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -Wall  $(WARNINGS) $(OTHER)
+CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -march=native -Wall  $(WARNINGS) $(OTHER)
 
 RELEASE_FLAGS := -DNDEBUG -g -O3 -std=c++17 -march=native
 

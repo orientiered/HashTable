@@ -5,6 +5,7 @@
 
 #include "hashTable.h"
 
+#include <immintrin.h>
 
 #define FREE(ptr) free(ptr); ptr = NULL
 #define CALLOC(type, nmemb) (type *) calloc(nmemb, sizeof(type))
@@ -164,11 +165,18 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, const
     headNode->next = newNode;
 
     size_t len   = strlen(key) + 1;
-    newNode->key = CALLOC(char, len);
+    // size in aligned_alloc must be multiple of alignment
+    size_t alloc_len = len + (KEY_ALIGNMENT - len % KEY_ALIGNMENT) % KEY_ALIGNMENT;
+    // allocating aligned memory to later use with SIMD
+    newNode->key = (char *) aligned_alloc(KEY_ALIGNMENT, alloc_len);
+    newNode->len = len - 1;
+
     if (!newNode->key) {
         hprintf("Failed to allocate memory for key\n");
         _ERR_RET(HT_MEMORY_ERROR);
     }
+    // zeroing bytes in allocated memory
+    memset(newNode->key, 0, alloc_len);
     memcpy(newNode->key, key, len);
 
     newNode->value = calloc(table->valSize, 1);
@@ -254,10 +262,10 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
     hash_t keyHash   = table->hash(key);
     size_t bucketIdx = keyHash % table->bucketsCount;
 
-    hashTableNode_t *node = table->buckets + bucketIdx;
-
+    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
+     
     while (node) {
-        if (node->key && strcmp(node->key, key) == 0 )
+        if (strcmp(node->key, key) == 0 )
             break;
 
         node = node->next;
@@ -290,10 +298,10 @@ void *hashTableAccess(hashTable_t *table, const char *key)
     hash_t keyHash   = table->hash(key);
     size_t bucketIdx = keyHash % table->bucketsCount;
 
-    hashTableNode_t *node = table->buckets + bucketIdx;
+    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
 
     while (node) {
-        if (node->key && strcmp(node->key, key) == 0 )
+        if (strcmp(node->key, key) == 0 )
             break;
 
         node = node->next;
@@ -309,6 +317,14 @@ void *hashTableAccess(hashTable_t *table, const char *key)
     return node->value;
 }
 
+static int fastStrcmp(__m256i a, __m256i *bptr) {
+    __m256i b = _mm256_load_si256(bptr);
+    __m256i cmpResult = _mm256_cmpeq_epi8(a, b);
+
+    int cmpMask = _mm256_movemask_epi8(cmpResult);
+    return ~cmpMask;
+}
+
 void *hashTableFind(hashTable_t *table, const char *key)
 {
     assert(table);
@@ -321,14 +337,44 @@ void *hashTableFind(hashTable_t *table, const char *key)
     hash_t keyHash   = table->hash(key);
     size_t bucketIdx = keyHash % table->bucketsCount;
 
-    hashTableNode_t *node = table->buckets + bucketIdx;
+    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
 
-    while (node) {
-        if (node->key && strcmp(node->key, key) == 0 )
-            return node->value;
 
-        node = node->next;
-    }
+    const size_t keyLen = strlen(key);
+    #ifndef FAST_STRCMP
+        while (node) {
+            if (node->len == keyLen && strcmp(node->key, key) == 0 )
+                return node->value;
+
+            node = node->next;
+        }
+    #else
+        if (keyLen >= SMALL_STR_LEN) {
+
+            while (node) {
+                if (node->len == keyLen && strcmp(node->key, key) == 0 )
+                    return node->value;
+
+                node = node->next;
+            }
+
+        } else {
+            alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+            memcpy(keyCopy, key, keyLen+1);
+            __m256i searchKey = _mm256_load_si256((__m256i *) keyCopy);
+
+            while (node) {
+                if (node->len == keyLen && fastStrcmp(searchKey, (__m256i *) node->key) == 0)
+                    return node->value;
+
+                node = node->next;
+
+            }
+
+        }
+
+    #endif
+
 
     return NULL;
 }
