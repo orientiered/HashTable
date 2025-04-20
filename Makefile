@@ -25,7 +25,7 @@ OTHER := -fcheck-new -fsized-deallocation -fstack-protector -fstrict-overflow -f
 
 CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -Wall  $(WARNINGS) $(OTHER)
 
-RELEASE_FLAGS := -DNDEBUG -O3 -std=c++17
+RELEASE_FLAGS := -DNDEBUG -ggdb3 -O3 -std=c++17 -msse4.1 -msse4.2 -mavx2 -mavx
 
 BUILD := DEBUG
 ASAN = 1
@@ -57,7 +57,7 @@ $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTeste
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY:clean compile_commands test_file
+.PHONY:clean compile_commands test_file perfTest
 
 clean:
 	rm build/*
@@ -73,3 +73,12 @@ test_file:
 	./prepareText.exe test_raw.txt testStrings.txt
 	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) 0.9
 
+
+FREQ = 15000
+FLAMEGRAPH_PATH = ~/Utils/FlameGraph/
+
+perfTest:
+	sudo perf record -g -F $(FREQ) ./hashMap.exe
+	sudo perf script > perf_result
+	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl ./perf_result | \
+	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg

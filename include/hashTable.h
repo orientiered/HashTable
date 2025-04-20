@@ -25,6 +25,7 @@ typedef hash_t (*hashFunc_t)(const void *ptr);
 
 hash_t checksum(const void *ptr);
 hash_t djb2(const void *ptr);
+hash_t crc32(const void *data);
 
 typedef struct hashTable {
     hashTableNode_t *buckets;
