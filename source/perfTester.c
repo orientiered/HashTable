@@ -88,6 +88,19 @@ text_t readFileSplit(const char *fileName) {
 }
 
 /* ========================== Tester function ========================== */
+int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests, codeClock_t *clock) {
+    int64_t totalFound = 0;
+
+    MEASURE_TIME(*clock,
+        for (int idx = 0; idx < requests.wordsCount; idx++) {
+            void *value = hashTableFind(ht, requests.words[idx]);
+            totalFound += (value != NULL);
+        }
+    )
+
+    return totalFound;
+}
+
 void testPerformance(const char *stringsFile, const char *requestsFile) {
     text_t words = readFileSplit(stringsFile);
     text_t requests = readFileSplit(requestsFile);
@@ -110,14 +123,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile) {
 
     hashTableCalcDistribution(&ht);
 
-    int64_t totalFound = 0;
-
-    MEASURE_TIME(clock,
-        for (int idx = 0; idx < requests.wordsCount; idx++) {
-            void *value = hashTableFind(&ht, requests.words[idx]);
-            totalFound += (value != NULL);
-        }
-    )
+    int64_t totalFound = testRequests(&ht, requests, &clock);
 
     fprintf(stderr, "Processed requests in %.2f ms\n", codeClockGetTimeMs(&clock));
 

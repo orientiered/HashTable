@@ -5,3 +5,5 @@ build
 *.exe
 .vscode
 compile_commands.json
+perf*
+test*

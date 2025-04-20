@@ -25,7 +25,7 @@ OTHER := -fcheck-new -fsized-deallocation -fstack-protector -fstrict-overflow -f
 
 CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -Wall  $(WARNINGS) $(OTHER)
 
-RELEASE_FLAGS := -DNDEBUG -ggdb3 -O3 -std=c++17 -msse4.1 -msse4.2 -mavx2 -mavx
+RELEASE_FLAGS := -DNDEBUG -g -O3 -std=c++17 -march=native
 
 BUILD := DEBUG
 ASAN = 1
@@ -66,12 +66,14 @@ compile_commands:
 	make clean
 	bear -- make BUILD=DEBUG
 
-TESTS = 10000000
+TESTS = 100000000 # 100 millions
+FOUND_PERCENT = 0.9
+TEST_FILE = shakespeare.txt
 test_file:
 	g++ generateTest.c -o generateTest.exe
 	g++ prepareText.c  -o prepareText.exe
-	./prepareText.exe test_raw.txt testStrings.txt
-	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) 0.9
+	./prepareText.exe $(TEST_FILE) testStrings.txt
+	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) $(FOUND_PERCENT)
 
 
 FREQ = 15000

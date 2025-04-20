@@ -30,7 +30,6 @@ text_t readFileSplit(const char *fileName);
 
 void testPerformance(const char *stringsFile, const char *requestsFile);
 
-
 #define MEASURE_TIME(clock, ...) \
     codeClockStart(&clock);      \
     __VA_ARGS__                  \

@@ -103,7 +103,8 @@ static const hash_t crc32_table[256] =
 	0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D 
 };
 
-hash_t crc32(const void *data) {
+hash_t crc32(const void *data) 
+{
 	hash_t crc = 0xFFFFFFFF;
 	
     const uint8_t *ptr = (const uint8_t *)data;
@@ -115,6 +116,7 @@ hash_t crc32(const void *data) {
 	return crc ^ 0xFFFFFFFF;
 }
 
+/* ================== Allocators ==================================================== */
 // expects bucketsCount and valueSize to be set already
 static hashTableStatus_t allocateBuckets(hashTable_t *table)
 {
@@ -190,6 +192,9 @@ static hashTableStatus_t deallocateNode(hashTable_t *table, hashTableNode_t *nod
     return HT_SUCCESS;
 }
 
+
+/* ===================================== Constructor and destructor ========================================== */
+
 hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount, hashFunc_t hash)
 {
     assert(table);
@@ -204,7 +209,7 @@ hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t buc
 
     table->hash = hash;
     if (hash == NULL)
-        table->hash = djb2;
+        table->hash = crc32;
 
     _VERIFY(table, HT_ERROR);
 
@@ -232,6 +237,8 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
     return HT_SUCCESS;
 }
 
+
+/* ===================================== Hash table functions ================================ */
 /// @brief Insert element in hashTable
 hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const void *value)
 {
