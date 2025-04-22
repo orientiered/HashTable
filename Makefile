@@ -25,7 +25,9 @@ OTHER := -fcheck-new -fsized-deallocation -fstack-protector -fstrict-overflow -f
 
 CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -march=native -Wall  $(WARNINGS) $(OTHER)
 
-RELEASE_FLAGS := -DNDEBUG -g -O3 -std=c++17 -march=native
+PERF_FLAGS := -fno-omit-frame-pointer
+
+RELEASE_FLAGS := -DNDEBUG -g  -O3 -std=c++17 -march=native
 
 BUILD := DEBUG
 ASAN = 1
@@ -35,10 +37,15 @@ else ifeq ($(ASAN), 1)
 	override CFLAGS := $(CFLAGS) $(ASAN_FLAGS)
 endif
 
+ifeq ($(BUILD),PERF)
+	override CFLAGS := $(RELEASE_FLAGS) $(PERF_FLAGS)
+endif
+
 override CFLAGS += -I./$(HDR_DIR)
 
+EXEC_NAME = hashMap.exe
 
-hashMap.exe: $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/main.o
+$(EXEC_NAME): $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/main.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 static: $(OBJ_DIR)/hashTable.o
@@ -80,7 +87,9 @@ FREQ = 15000
 FLAMEGRAPH_PATH = ~/Utils/FlameGraph/
 
 perfTest:
-	sudo perf record -g -F $(FREQ) ./hashMap.exe
+	make clean
+	make BUILD=PERF
+	sudo perf record -g -F $(FREQ) ./$(EXEC_NAME)
 	sudo perf script > perf_result
 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl ./perf_result | \
 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg

@@ -165,18 +165,31 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, const
     headNode->next = newNode;
 
     size_t len   = strlen(key) + 1;
-    // size in aligned_alloc must be multiple of alignment
-    size_t alloc_len = len + (KEY_ALIGNMENT - len % KEY_ALIGNMENT) % KEY_ALIGNMENT;
-    // allocating aligned memory to later use with SIMD
-    newNode->key = (char *) aligned_alloc(KEY_ALIGNMENT, alloc_len);
-    newNode->len = len - 1;
+    size_t alloc_len = len;
+
+    #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+        newNode->len = len-1; // without terminating byte
+    #endif
+
+    #if defined(FAST_STRCMP)
+        // size in aligned_alloc must be multiple of alignment
+        alloc_len += (KEY_ALIGNMENT - len % KEY_ALIGNMENT) % KEY_ALIGNMENT;
+        // allocating aligned memory to later use with SIMD
+        newNode->key = (char *) aligned_alloc(KEY_ALIGNMENT, alloc_len);
+    #else
+        newNode->key = (char *) calloc(alloc_len, 1);
+    #endif
+    
 
     if (!newNode->key) {
         hprintf("Failed to allocate memory for key\n");
         _ERR_RET(HT_MEMORY_ERROR);
     }
-    // zeroing bytes in allocated memory
-    memset(newNode->key, 0, alloc_len);
+    #if defined(FAST_STRCMP)
+        // zeroing bytes in allocated memory
+        memset(newNode->key, 0, alloc_len);
+    #endif
+
     memcpy(newNode->key, key, len);
 
     newNode->value = calloc(table->valSize, 1);
@@ -263,9 +276,13 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
     size_t bucketIdx = keyHash % table->bucketsCount;
 
     hashTableNode_t *node = (table->buckets + bucketIdx)->next;
-     
+    
+    CMP_LEN_OPT(
+        const size_t keyLen = strlen(key);
+    )
+
     while (node) {
-        if (strcmp(node->key, key) == 0 )
+        if (CMP_LEN_OPT(keyLen == node->len &&) strcmp(node->key, key) == 0 )
             break;
 
         node = node->next;
@@ -300,8 +317,12 @@ void *hashTableAccess(hashTable_t *table, const char *key)
 
     hashTableNode_t *node = (table->buckets + bucketIdx)->next;
 
+    CMP_LEN_OPT(
+        const size_t keyLen = strlen(key);
+    )
+
     while (node) {
-        if (strcmp(node->key, key) == 0 )
+        if (CMP_LEN_OPT(keyLen == node->len &&) strcmp(node->key, key) == 0 )
             break;
 
         node = node->next;
@@ -317,13 +338,25 @@ void *hashTableAccess(hashTable_t *table, const char *key)
     return node->value;
 }
 
-static int fastStrcmp(__m256i a, __m256i *bptr) {
-    __m256i b = _mm256_load_si256(bptr);
-    __m256i cmpResult = _mm256_cmpeq_epi8(a, b);
+#if defined(FAST_STRCMP)
 
-    int cmpMask = _mm256_movemask_epi8(cmpResult);
+#ifdef AVX2
+    typedef __m256i MMi_t;
+    #define _MM_LOAD(ptr) _mm256_load_si256(ptr)
+    #define _MM_CMP_MOVEMASK(a, b) _mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b))
+#elif defined(AVX512)
+    typedef __m512i MMi_t;
+    #define _MM_LOAD(ptr) _mm512_load_si512(ptr)
+    #define _MM_CMP_MOVEMASK(a, b) _mm512_cmpeq_epi16_mask(a,b)
+#endif
+
+static int fastStrcmp(MMi_t a, MMi_t *bptr) {
+    MMi_t b = _MM_LOAD(bptr);
+    int cmpMask = _MM_CMP_MOVEMASK(a, b);
     return ~cmpMask;
 }
+
+#endif
 
 void *hashTableFind(hashTable_t *table, const char *key)
 {
@@ -343,7 +376,7 @@ void *hashTableFind(hashTable_t *table, const char *key)
     const size_t keyLen = strlen(key);
     #ifndef FAST_STRCMP
         while (node) {
-            if (node->len == keyLen && strcmp(node->key, key) == 0 )
+            if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
                 return node->value;
 
             node = node->next;
@@ -352,7 +385,7 @@ void *hashTableFind(hashTable_t *table, const char *key)
         if (keyLen >= SMALL_STR_LEN) {
 
             while (node) {
-                if (node->len == keyLen && strcmp(node->key, key) == 0 )
+                if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
                     return node->value;
 
                 node = node->next;
@@ -361,10 +394,10 @@ void *hashTableFind(hashTable_t *table, const char *key)
         } else {
             alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
             memcpy(keyCopy, key, keyLen+1);
-            __m256i searchKey = _mm256_load_si256((__m256i *) keyCopy);
+            MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
 
             while (node) {
-                if (node->len == keyLen && fastStrcmp(searchKey, (__m256i *) node->key) == 0)
+                if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
                     return node->value;
 
                 node = node->next;
@@ -407,6 +440,14 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
                 errprintf("Found node without key in bucket %zu\n", bucketIdx);
                 return HT_NO_KEY;
             }
+
+            #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+                const size_t keyLen = strlen(node->key);
+                if (keyLen != node->len) {
+                    errprintf("Wrong len of key %s\n", node->key);
+                    return HT_NO_KEY;
+                }
+            #endif
 
             if (table->valSize > 0 && !node->value) {
                 errprintf("Found node without value in bucket %zu (valSize > 0)\n", bucketIdx);

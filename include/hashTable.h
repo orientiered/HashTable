@@ -14,16 +14,37 @@
     #define hprintf(...)
 #endif
 
-// #define FAST_STRCMP
+/*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN */
+#define FAST_STRCMP
+/*! Adds field len in hashTableNode and improves strcmp by comparing length first */
+#define CMP_LEN_FIRST 
 
+#ifndef CMP_LEN_FIRST
+    #define CMP_LEN_OPT(...)  
+#else
+    #define CMP_LEN_OPT(...) __VA_ARGS__
+#endif
+
+//Note: do not use AVX512, it performs worse
+#define AVX2
+
+#if defined(AVX2)
 static const size_t KEY_ALIGNMENT = 32; // alignment of keys in bytes
-static const size_t SMALL_STR_LEN = 32;
+static const size_t SMALL_STR_LEN = 32; // lenght of string with terminating byte that fits into simd register
+#elif defined(AVX512)
+static const size_t KEY_ALIGNMENT = 64; // alignment of keys in bytes
+static const size_t SMALL_STR_LEN = 64;
+#else
+#error Define either AVX2 or AVX512
+#endif
 
 typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
     char  *key;
+#if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
     uint32_t len;
+#endif
 } hashTableNode_t;
 
 typedef uint64_t hash_t;
