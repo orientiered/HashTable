@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -144,12 +145,12 @@ static hashTableStatus_t deallocateBuckets(hashTable_t *table)
     return HT_SUCCESS;
 }
 
-static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, const size_t bucketIdx)
+static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashTableNode_t *bucketHead, hashTableNode_t **nodePtr)
 {
     assert(table);
     assert(key);
 
-    assert(bucketIdx < table->bucketsCount);
+    assert(bucketHead);
     assert(table->buckets);
 
     hashTableNode_t *newNode = CALLOC(hashTableNode, 1);
@@ -159,7 +160,7 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, const
         _ERR_RET(HT_MEMORY_ERROR);
     }
 
-    hashTableNode_t *headNode = table->buckets + bucketIdx;
+    hashTableNode_t *headNode = bucketHead;
 
     newNode->next  = headNode->next;
     headNode->next = newNode;
@@ -197,6 +198,9 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, const
         hprintf("Failed to allocate memory for value\n");
         _ERR_RET(HT_MEMORY_ERROR);
     }
+
+    if (nodePtr)
+        *nodePtr = newNode;
 
     return HT_SUCCESS;
 }
@@ -260,83 +264,6 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
 
 
 /* ===================================== Hash table functions ================================ */
-/// @brief Insert element in hashTable
-hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const void *value)
-{
-    assert(table);
-    assert(key);
-    assert(table->valSize==0 || value);
-
-    assert(table->buckets);
-    assert(table->bucketsCount > 0);
-
-    _VERIFY(table, HT_ERROR);
-
-    hash_t keyHash   = table->hash(key);
-    size_t bucketIdx = keyHash % table->bucketsCount;
-
-    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
-    
-    CMP_LEN_OPT(
-        const size_t keyLen = strlen(key);
-    )
-
-    while (node) {
-        if (CMP_LEN_OPT(keyLen == node->len &&) strcmp(node->key, key) == 0 )
-            break;
-
-        node = node->next;
-    }
-
-
-    if (!node) {
-        table->size++;
-        _ERR_RET(allocateNode(table, key, bucketIdx));
-        node = (table->buckets + bucketIdx)->next;
-    }
-
-    memcpy(node->value, value, table->valSize);
-
-    return HT_SUCCESS;
-}
-
-/// @brief Access element in hash table or insert it with default value
-/// @return Ptr to element or NULL in case of error
-void *hashTableAccess(hashTable_t *table, const char *key)
-{
-    assert(table);
-    assert(key);
-
-    assert(table->buckets);
-    assert(table->bucketsCount > 0);
-
-    _VERIFY(table, NULL);
-
-    hash_t keyHash   = table->hash(key);
-    size_t bucketIdx = keyHash % table->bucketsCount;
-
-    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
-
-    CMP_LEN_OPT(
-        const size_t keyLen = strlen(key);
-    )
-
-    while (node) {
-        if (CMP_LEN_OPT(keyLen == node->len &&) strcmp(node->key, key) == 0 )
-            break;
-
-        node = node->next;
-    }
-
-
-    if (!node) {
-        table->size++;
-        _ERR_RET_PTR(allocateNode(table, key, bucketIdx));
-        node = (table->buckets + bucketIdx)->next;
-    }
-
-    return node->value;
-}
 
 #if defined(FAST_STRCMP)
 
@@ -358,8 +285,9 @@ static int fastStrcmp(MMi_t a, MMi_t *bptr) {
 
 #endif
 
-void *hashTableFind(hashTable_t *table, const char *key)
-{
+/// @brief Core function of hashTable
+/// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
+static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
     assert(table);
     assert(key);
     assert(table->buckets);
@@ -367,13 +295,24 @@ void *hashTableFind(hashTable_t *table, const char *key)
 
     _VERIFY(table, NULL);
 
+    // Calculating hash of the string
     hash_t keyHash   = table->hash(key);
+    // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
-    hashTableNode_t *node = (table->buckets + bucketIdx)->next;
+    // Bucket - head node of the list
+    hashTableNode_t *bucket = (table->buckets + bucketIdx);
+    if (bucketPtr)
+        *bucketPtr = bucket;
 
+    // Getting first node with actual values
+    hashTableNode_t *node = bucket->next;
 
-    const size_t keyLen = strlen(key);
+    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
+        // Calculating length of the key string
+        const size_t keyLen = strlen(key);
+    #endif
+
     #ifndef FAST_STRCMP
         while (node) {
             if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
@@ -383,33 +322,100 @@ void *hashTableFind(hashTable_t *table, const char *key)
         }
     #else
         if (keyLen >= SMALL_STR_LEN) {
-
+            // Key doesn't fit in SIMD register
             while (node) {
                 if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
-                    return node->value;
+                    return node;
 
                 node = node->next;
             }
 
         } else {
+            // Creating local aligned array of chars for key
             alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+            // Copying key to it
             memcpy(keyCopy, key, keyLen+1);
+            // Loading key to SIMD register
             MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
 
             while (node) {
-                if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
-                    return node->value;
+                if (CMP_LEN_OPT(node->len == keyLen &&) 
+                    //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+                    fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                    return node;
 
                 node = node->next;
 
             }
-
         }
 
     #endif
 
-
     return NULL;
+}
+
+/// @brief Insert element in hashTable
+hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const void *value)
+{
+    assert(table);
+    assert(key);
+    assert(table->valSize==0 || value);
+
+    assert(table->buckets);
+    assert(table->bucketsCount > 0);
+
+    _VERIFY(table, HT_ERROR);
+
+    hashTableNode_t *bucket = NULL;
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, &bucket);
+
+
+    if (!node) {
+        table->size++;
+        _ERR_RET(allocateNode(table, key, bucket, &node) );
+    }
+
+    memcpy(node->value, value, table->valSize);
+
+    return HT_SUCCESS;
+}
+
+/// @brief Access element in hash table or insert it with default value
+/// @return Ptr to element or NULL in case of error
+void *hashTableAccess(hashTable_t *table, const char *key)
+{
+    assert(table);
+    assert(key);
+
+    assert(table->buckets);
+    assert(table->bucketsCount > 0);
+
+    _VERIFY(table, NULL);
+
+    hashTableNode_t *bucket = NULL;
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, &bucket);
+
+    if (!node) {
+        table->size++;
+        _ERR_RET_PTR(allocateNode(table, key, bucket, &node));
+    }
+
+    return node->value;
+}
+
+
+void *hashTableFind(hashTable_t *table, const char *key)
+{
+    assert(table);
+    assert(key);
+    assert(table->buckets);
+    assert(table->bucketsCount);
+
+    _VERIFY(table, NULL);
+
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, NULL);
+
+    return node ? node->value : node;
 }
 
 hashTableStatus_t hashTableVerify(hashTable_t *table)
@@ -537,7 +543,7 @@ hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
     float meanOfSquares = (float) sumOfSquares / (float) table->bucketsCount;
     float mean = (float) sum / (float) table->bucketsCount;
 
-    float disp = meanOfSquares - mean*mean;
+    float disp = sqrt(meanOfSquares - mean*mean);
 
     fprintf(stderr, "Average elements in bucket: %.2f\n"
                     "Dispersion: %.2f\n", mean, disp);

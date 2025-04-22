@@ -87,7 +87,9 @@ text_t readFileSplit(const char *fileName) {
     return result;
 }
 
-/* ========================== Tester function ========================== */
+/* ========================== Tester functions ========================== */
+
+/* Main stress test function */
 int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests, codeClock_t *clock) {
     int64_t totalFound = 0;
 
@@ -101,6 +103,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
     return totalFound;
 }
 
+/* Wrapper for testRequests that loads test data from given files */
 void testPerformance(const char *stringsFile, const char *requestsFile) {
     text_t words = readFileSplit(stringsFile);
     text_t requests = readFileSplit(requestsFile);
