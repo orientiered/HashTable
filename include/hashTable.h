@@ -14,10 +14,17 @@
     #define hprintf(...)
 #endif
 
-/*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN */
+/* ============================ Optimization defines ================================ */
+/*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
-/*! Adds field len in hashTableNode and improves strcmp by comparing length first */
+/*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 #define CMP_LEN_FIRST 
+/*! Which SIMD instruction set is used for fastStrcmp                                 */
+// Note: SSE is fastest
+#define SSE
+/*! Use hardware-optimized hash function                                              */
+#define FAST_CRC32
+
 
 #ifndef CMP_LEN_FIRST
     #define CMP_LEN_OPT(...)  
@@ -25,8 +32,19 @@
     #define CMP_LEN_OPT(...) __VA_ARGS__
 #endif
 
-//Note: do not use AVX512, it performs worse
-#define SSE
+typedef uint64_t hash_t;
+typedef hash_t (*hashFunc_t)(const void *ptr);
+
+hash_t checksum(const void *ptr);
+hash_t djb2(const void *ptr);
+hash_t crc32(const void *data);
+
+#ifdef FAST_CRC32
+extern "C" hash_t fastCrc32u(const void *data);
+#endif
+
+#define _HASH_FUNC crc32 
+
 
 #if defined(SSE)
 static const size_t KEY_ALIGNMENT = 16; // alignment of keys in bytes
@@ -50,12 +68,6 @@ typedef struct hashTableNode {
 #endif
 } hashTableNode_t;
 
-typedef uint64_t hash_t;
-typedef hash_t (*hashFunc_t)(const void *ptr);
-
-hash_t checksum(const void *ptr);
-hash_t djb2(const void *ptr);
-hash_t crc32(const void *data);
 
 typedef struct hashTable {
     hashTableNode_t *buckets;
@@ -65,7 +77,7 @@ typedef struct hashTable {
 
     size_t size;
 
-    hashFunc_t hash;
+    // hashFunc_t hash;
     HDBG(int (*printElem)(const void *ptr);)
 } hashTable_t;
 
@@ -89,7 +101,7 @@ typedef enum hashTableStatus {
 } hashTableStatus_t;
 
 
-hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount, hashFunc_t hash);
+hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount);
 hashTableStatus_t hashTableDtor(hashTable_t *table);
 
 /// @brief Insert element in hashTable or rewrite it's value if already inserted

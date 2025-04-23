@@ -45,7 +45,7 @@ override CFLAGS += -I./$(HDR_DIR)
 
 EXEC_NAME = hashMap.exe
 
-$(EXEC_NAME): $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/main.o
+$(EXEC_NAME): $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/crc32.o $(OBJ_DIR)/main.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 static: $(OBJ_DIR)/hashTable.o
@@ -55,6 +55,10 @@ static: $(OBJ_DIR)/hashTable.o
 $(OBJ_DIR)/hashTable.o: $(SRC_DIR)/hashTable.c $(HDR_DIR)/hashTable.h
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/crc32.o: $(SRC_DIR)/crc32.s
+	mkdir -p $(OBJ_DIR)
+	nasm -g -f elf64  -l $(OBJ_DIR)/crc32.lst $< -o $@
 
 $(OBJ_DIR)/perfTester.o: $(SRC_DIR)/perfTester.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTester.h
 	mkdir -p $(OBJ_DIR)

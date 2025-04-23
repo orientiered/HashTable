@@ -220,7 +220,7 @@ static hashTableStatus_t deallocateNode(hashTable_t *table, hashTableNode_t *nod
 
 /* ===================================== Constructor and destructor ========================================== */
 
-hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount, hashFunc_t hash)
+hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount)
 {
     assert(table);
     assert(bucketsCount > 0);
@@ -231,10 +231,6 @@ hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t buc
     _ERR_RET(allocateBuckets(table));
 
     table->size = 0;
-
-    table->hash = hash;
-    if (hash == NULL)
-        table->hash = crc32;
 
     _VERIFY(table, HT_ERROR);
 
@@ -302,8 +298,13 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
 
     _VERIFY(table, NULL);
 
+    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
+        // Calculating length of the key string
+        const size_t keyLen = strlen(key);
+    #endif
+
     // Calculating hash of the string
-    hash_t keyHash   = table->hash(key);
+    hash_t keyHash   = _HASH_FUNC(key);
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -315,10 +316,6 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
     // Getting first node with actual values
     hashTableNode_t *node = bucket->next;
 
-    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
-        // Calculating length of the key string
-        const size_t keyLen = strlen(key);
-    #endif
 
     #ifndef FAST_STRCMP
         while (node) {
@@ -446,7 +443,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
         while (node) {
             size++;
-            hash_t hash = table->hash(node->key);
+            hash_t hash = _HASH_FUNC(node->key);
 
 
             if (!node->key) {

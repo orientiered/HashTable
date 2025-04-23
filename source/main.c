@@ -38,7 +38,7 @@ static int64_t getFileSize(const int fd) {
 
 static int smallTest() {
     hashTable_t ht = {};
-    _ERR_RET(hashTableCtor(&ht, sizeof(int), 3, NULL));
+    _ERR_RET(hashTableCtor(&ht, sizeof(int), 3));
 
     char str[64];
     for (int i = 0; i < 5; i++) {
