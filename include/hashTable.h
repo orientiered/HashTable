@@ -26,16 +26,19 @@
 #endif
 
 //Note: do not use AVX512, it performs worse
-#define AVX2
+#define SSE
 
-#if defined(AVX2)
+#if defined(SSE)
+static const size_t KEY_ALIGNMENT = 16; // alignment of keys in bytes
+static const size_t SMALL_STR_LEN = 16; // lenght of string with terminating byte that fits into simd register
+#elif defined(AVX2)
 static const size_t KEY_ALIGNMENT = 32; // alignment of keys in bytes
 static const size_t SMALL_STR_LEN = 32; // lenght of string with terminating byte that fits into simd register
 #elif defined(AVX512)
 static const size_t KEY_ALIGNMENT = 64; // alignment of keys in bytes
 static const size_t SMALL_STR_LEN = 64;
 #else
-#error Define either AVX2 or AVX512
+#error Define either SSE, AVX2 or AVX512
 #endif
 
 typedef struct hashTableNode {

@@ -118,8 +118,9 @@ Changes:
     ```c
     static int fastStrcmp(MMi_t a, MMi_t *bptr) {
         MMi_t b = _MM_LOAD(bptr);
-        int cmpMask = _MM_CMP_MOVEMASK(a, b); //k-th bit = (a[k] == b[k])
-        return ~cmpMask;
+        uint32_t cmpMask = (uint32_t) _MM_CMP_MOVEMASK(a, b); //k-th bit = (a[k] == b[k])
+        //_MM_MASK_CONSTANT is 0xFFFF for SSE and 0xFFFFFFFFF for AVX2
+        return (int) (cmpMask ^ _MM_MASK_CONSTANT); 
     }
     ```
 
@@ -135,5 +136,17 @@ Execution time: 11.6 seconds
 
 Both strcmp optimizations:
 
-Execution time: 10.15 seconds
+Execution time: 10.15 seconds (AVX2)
 ![fastcmp_opt](docs/hotspot_BothStrcmp.png)
+
+Most strings are shorter than 16 characters. It means that we can use SSE instructions to compare strings and in theory it could be faster, because less memory needs to be loaded.
+
+Both strcmp optimizations and SSE SIMD:
+
+Execution time: 9.23 seconds
+
+![sse_strcmp](docs/hotspot_SSEstrcmp.png)
+
+![hottest_functions1](docs/hotspot_SSE_list.png)
+
+`CRC32` takes almost 15% of computing time. This hashing algorithm is so widely used, that CPU's have dedicated instruction to calculate it: `crc32`.
