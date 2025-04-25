@@ -40,10 +40,14 @@ hash_t djb2(const void *ptr);
 hash_t crc32(const void *data);
 
 #ifdef FAST_CRC32
-extern "C" hash_t fastCrc32u(const void *data);
+extern "C" { 
+    hash_t fastCrc32u(const void *data);
+    hash_t fastCrc32(const void *data, const size_t len);
+    hash_t fastCrc32_16(const void *data);
+}
 #endif
 
-#define _HASH_FUNC crc32 
+#define _HASH_FUNC fastCrc32
 
 
 #if defined(SSE)

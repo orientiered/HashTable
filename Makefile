@@ -27,7 +27,7 @@ CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -march=native -W
 
 PERF_FLAGS := -fno-omit-frame-pointer
 
-RELEASE_FLAGS := -DNDEBUG -g  -O3 -std=c++17 -march=native
+RELEASE_FLAGS := -DNDEBUG -g -O3 -std=c++17 -march=native
 
 BUILD := DEBUG
 ASAN = 1
@@ -93,7 +93,7 @@ FLAMEGRAPH_PATH = ~/Utils/FlameGraph/
 perfTest:
 	make clean
 	make BUILD=PERF
-	sudo perf record -g -F $(FREQ) ./$(EXEC_NAME)
+	sudo perf record -g --call-graph dwarf -F $(FREQ) ./$(EXEC_NAME)
 	sudo perf script > perf_result
 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl ./perf_result | \
 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg

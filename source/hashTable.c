@@ -118,6 +118,16 @@ hash_t crc32(const void *data)
 	return crc ^ 0xFFFFFFFF;
 }
 
+// Calculate crc32 hash of 16 bytes of data
+hash_t fastCrc32_16(const void *data) {
+    hash_t crc = 0xFFFFFFFF;
+    asm("crc32q  (%[ptr]), %[crc]\n\t"
+        "crc32q 8(%[ptr]), %[crc]\n" 
+      : [crc] "+r" (crc)
+      : [ptr] "r" (data));
+    return crc;
+}
+
 /* ================== Allocators ==================================================== */
 // expects bucketsCount and valueSize to be set already
 static hashTableStatus_t allocateBuckets(hashTable_t *table)
@@ -288,9 +298,7 @@ static int fastStrcmp(MMi_t a, MMi_t *bptr) {
 
 #endif
 
-/// @brief Core function of hashTable
-/// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
-static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
+static hashTableNode_t *_hashTableGetBucketAndElement_1(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
     assert(table);
     assert(key);
     assert(table->buckets);
@@ -304,7 +312,8 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
     #endif
 
     // Calculating hash of the string
-    hash_t keyHash   = _HASH_FUNC(key);
+    // hash_t keyHash   = _HASH_FUNC(key, keyLen);
+    hash_t keyHash   = fastCrc32u(key);
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -357,6 +366,65 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
 
     return NULL;
 }
+
+static hashTableNode_t *_hashTableGetBucketAndElement_2(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
+    assert(table);
+    assert(key);
+    assert(table->buckets);
+    assert(table->bucketsCount);
+
+    _VERIFY(table, NULL);
+
+    const size_t keyLen = strlen(key);
+    alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+
+    hash_t keyHash   = 0;
+    if (keyLen >= SMALL_STR_LEN) {
+        // Note: hashes calculated with fastCrc32u and fastCrc32_16 
+        // may be different, because with fastCrc32_16 zeros are appended to get 16 bytes 
+        keyHash = fastCrc32u(key);
+    
+    } else {
+        memcpy(keyCopy, key, keyLen+1);
+        keyHash = fastCrc32_16(keyCopy);
+    }
+
+    // Bucket - head node of the list
+    // Node = bucket->next - first node with element
+    size_t bucketIdx = keyHash % table->bucketsCount;
+    hashTableNode_t *bucket = (table->buckets + bucketIdx),
+                    *node   = bucket->next;
+    if (bucketPtr)
+        *bucketPtr = bucket;
+
+    if (keyLen >= SMALL_STR_LEN) {
+        while (node) {
+            if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
+                return node;
+
+            node = node->next;
+        }
+    } else {
+        // Loading key to SIMD register
+        MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);        
+
+        while (node) {
+            if (CMP_LEN_OPT(node->len == keyLen &&) 
+                //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+                fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                return node;
+
+            node = node->next;
+
+        }        
+    }
+
+    return NULL;
+}
+
+/// @brief Core function of hashTable
+/// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
+#define hashTableGetBucketAndElement(table, key, bucketPtr) _hashTableGetBucketAndElement_2(table, key, bucketPtr)
 
 /// @brief Insert element in hashTable
 hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const void *value)
@@ -443,7 +511,9 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
         while (node) {
             size++;
-            hash_t hash = _HASH_FUNC(node->key);
+            const size_t keyLen = strlen(node->key);
+
+            hash_t hash = _HASH_FUNC(node->key, keyLen);
 
 
             if (!node->key) {
@@ -452,7 +522,6 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
             }
 
             #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
-                const size_t keyLen = strlen(node->key);
                 if (keyLen != node->len) {
                     errprintf("Wrong len of key %s\n", node->key);
                     return HT_NO_KEY;
