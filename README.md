@@ -20,7 +20,7 @@ Built-in hash functions:
 + `djb2` - simple and fast hashing algorithm
 + `crc32` - used by default
 
-You may pass your own hash function. Requirments:
+You use your own hash function specify it in `include/hashTable.h` in `#define _HASH_FUNC`. Requirments for hash function:
 
 + `hash_t your_hash(const void *ptr);`
 + `ptr` is pointer to the start of C-string (may change later)
@@ -179,3 +179,4 @@ Execution time: 9.2 seconds, 34.9 * 10^9 clock cycles
 
 ![crc32u_flame](docs/flame_crc32u.png)
 
+Program now works faster, but hashing function takes more cycles. Probable explanation: `crc32` uses different polynom, which has better distribution. On my test file dispersion of elements in bucket decreased from 4.03 to 3.93.

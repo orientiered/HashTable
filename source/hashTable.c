@@ -367,60 +367,60 @@ static hashTableNode_t *_hashTableGetBucketAndElement_1(hashTable_t *table, cons
     return NULL;
 }
 
-// static hashTableNode_t *_hashTableGetBucketAndElement_2(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
-//     assert(table);
-//     assert(key);
-//     assert(table->buckets);
-//     assert(table->bucketsCount);
+static hashTableNode_t *_hashTableGetBucketAndElement_2(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
+    assert(table);
+    assert(key);
+    assert(table->buckets);
+    assert(table->bucketsCount);
 
-//     _VERIFY(table, NULL);
+    _VERIFY(table, NULL);
 
-//     const size_t keyLen = strlen(key);
-//     alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+    const size_t keyLen = strlen(key);
+    alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
 
-//     hash_t keyHash   = 0;
-//     if (keyLen >= SMALL_STR_LEN) {
-//         // Note: hashes calculated with fastCrc32u and fastCrc32_16 
-//         // may be different, because with fastCrc32_16 zeros are appended to get 16 bytes 
-//         keyHash = fastCrc32u(key);
+    hash_t keyHash   = 0;
+    if (keyLen >= SMALL_STR_LEN) {
+        // Note: hashes calculated with fastCrc32u and fastCrc32_16 
+        // may be different, because with fastCrc32_16 zeros are appended to get 16 bytes 
+        keyHash = fastCrc32u(key);
     
-//     } else {
-//         memcpy(keyCopy, key, keyLen+1);
-//         keyHash = fastCrc32_16(keyCopy);
-//     }
+    } else {
+        memcpy(keyCopy, key, keyLen+1);
+        keyHash = fastCrc32_16(keyCopy);
+    }
 
-//     // Bucket - head node of the list
-//     // Node = bucket->next - first node with element
-//     size_t bucketIdx = keyHash % table->bucketsCount;
-//     hashTableNode_t *bucket = (table->buckets + bucketIdx),
-//                     *node   = bucket->next;
-//     if (bucketPtr)
-//         *bucketPtr = bucket;
+    // Bucket - head node of the list
+    // Node = bucket->next - first node with element
+    size_t bucketIdx = keyHash % table->bucketsCount;
+    hashTableNode_t *bucket = (table->buckets + bucketIdx),
+                    *node   = bucket->next;
+    if (bucketPtr)
+        *bucketPtr = bucket;
 
-//     if (keyLen >= SMALL_STR_LEN) {
-//         while (node) {
-//             if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
-//                 return node;
+    if (keyLen >= SMALL_STR_LEN) {
+        while (node) {
+            if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
+                return node;
 
-//             node = node->next;
-//         }
-//     } else {
-//         // Loading key to SIMD register
-//         MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);        
+            node = node->next;
+        }
+    } else {
+        // Loading key to SIMD register
+        MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);        
 
-//         while (node) {
-//             if (CMP_LEN_OPT(node->len == keyLen &&) 
-//                 //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
-//                 fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
-//                 return node;
+        while (node) {
+            if (CMP_LEN_OPT(node->len == keyLen &&) 
+                //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+                fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                return node;
 
-//             node = node->next;
+            node = node->next;
 
-//         }        
-//     }
+        }        
+    }
 
-//     return NULL;
-// }
+    return NULL;
+}
 
 /// @brief Core function of hashTable
 /// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
