@@ -101,7 +101,10 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
         for (int loop = 0; loop < TEST_LOOPS; loop++) {
             for (int idx = 0; idx < requests.wordsCount; idx++) {
                 void *value = hashTableFind(ht, requests.words[idx]);
-                totalFound += (value != NULL);
+                if (value) {
+                    (*(int *)value)++; 
+                    totalFound++;
+                }
             }
         }
     )
@@ -111,7 +114,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
 
 /* Wrapper for testRequests that loads test data from given files */
 void testPerformance(const char *stringsFile, const char *requestsFile) {
-    text_t words = readFileSplit(stringsFile);
+    text_t words    = readFileSplit(stringsFile);
     text_t requests = readFileSplit(requestsFile);
 
     hashTable ht = {};
@@ -130,7 +133,28 @@ void testPerformance(const char *stringsFile, const char *requestsFile) {
                 words.wordsCount, codeClockGetTimeMs(&clock) );
     fprintf(stderr, "Hash table size = %zu\n", ht.size);
 
+    /* ======================= Statistics ========================================== */
     hashTableCalcDistribution(&ht);
+
+    size_t less16 = 0, less32 = 0;
+    for (size_t bucketIdx = 0; bucketIdx < ht.bucketsCount; bucketIdx++) {
+        hashTableNode_t *node = ht.buckets[bucketIdx].next;
+        while(node) {
+            if (node->len < 16) {
+                less16++;
+                less32++;
+            } else if (node->len < 32) {
+                less32++;
+            }
+            node = node->next;
+        }
+    }
+
+    fprintf(stderr, "length < 16: %zu, length < 32: %zu\nTable size: %zu\n", 
+                                    less16, less32, ht.size);
+
+
+    /* ====================================== Main test ================================== */
 
     int64_t totalFound = testRequests(&ht, requests, &clock);
 

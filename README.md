@@ -39,6 +39,7 @@ OS: Linux Mint 22.1 x86_64
 To test performance i will use ["The Complete Works of William Shakespeare"](https://www.gutenberg.org/cache/epub/100/pg100.txt). [File](shakespeare.txt)
 
 1.`testString.txt`: all words are split by lines and everything except letters is removed.
+
 2.`testRequests.txt`: search requests for hash table. Consist of 10 millions lines (approx 50mb), 90% of which are lines from `testString.txt` and other 10% are random gibberish with length of 3 to 14 letters. This file is processed 10 times.
 
 You could create these files by running `make test_file`. There are options `TESTS`(100 millions by default) and `FOUND_PERCENT` (0.9 by default) that you can tweak.

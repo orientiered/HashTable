@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <immintrin.h>
 
 #define errprintf(...) fprintf(stderr, __VA_ARGS__)
 #define TODO(msg) do {errprintf("TODO at %s:%d : %s", __FILE__, __LINE__, msg); abort();} while(0)
@@ -14,6 +15,11 @@
     #define hprintf(...)
 #endif
 
+
+/* ============================ Debug defines        ================================ */
+
+// #define HASH_TABLE_VERIFY
+
 /* ============================ Optimization defines ================================ */
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
@@ -23,7 +29,7 @@
 // Note: SSE is fastest
 #define SSE
 /*! Use hardware-optimized hash function                                              */
-#define FAST_CRC32
+// #define FAST_CRC32
 
 
 #ifndef CMP_LEN_FIRST
@@ -68,16 +74,22 @@ static const size_t SMALL_STR_LEN = 64;
 typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
-    char  *key;
-#if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+    __m128i key;
     uint32_t len;
-#endif
 } hashTableNode_t;
 
+typedef struct hashTableLongElem {
+    char *key;
+    void *value;
+    uint32_t len;
+} hashTableLongElem_t;
 
 typedef struct hashTable {
     hashTableNode_t *buckets;
     size_t bucketsCount;
+
+    hashTableLongElem_t *longKeys;
+    size_t longKeysCount;
 
     size_t valSize;
 
@@ -162,7 +174,6 @@ static void htStackTrace(const char *file, int line, const char *function) {
     }
 
 
-// #define HASH_TABLE_VERIFY
 
 #ifdef HASH_TABLE_VERIFY
     #define _VERIFY(table, ret) do {                             \
