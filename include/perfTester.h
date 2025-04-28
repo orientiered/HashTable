@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <time.h>
 
+static const int TEST_LOOPS = 10;
+
 typedef struct {
     char *data;
     int64_t length;
@@ -15,7 +17,9 @@ typedef struct {
 typedef struct {
     struct timespec start;
     struct timespec end;
-    int64_t elapsed;
+    int64_t clocksStart;
+    int64_t clocksEnd;
+    int64_t elapsed; // in microseconds
 } codeClock_t;
 
 void codeClockStart(codeClock_t *clk);

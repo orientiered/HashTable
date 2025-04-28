@@ -94,6 +94,6 @@ perfTest:
 	make clean
 	make BUILD=PERF
 	sudo perf record -g --call-graph dwarf -F $(FREQ) ./$(EXEC_NAME)
-	sudo perf script > perf_result
-	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl ./perf_result | \
+	sudo perf script | \
+	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg

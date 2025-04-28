@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
+#include <x86intrin.h>
 
 #include "perfTester.h"
 #include "hashTable.h"
@@ -8,13 +9,16 @@
 /* ========================== Clock functions ========================== */
 void codeClockStart(codeClock_t *clk) {
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &clk->start);
+    clk->clocksStart = _rdtsc();
 }
 
-const int64_t MCS_PER_SEC = 1000000;
-const int64_t MCS_PER_MSC = 1000;
+const int64_t MCS_PER_SEC  = 1000000;
+const int64_t MCS_PER_MSC  = 1000;
 const int64_t NSEC_PER_MCS = 1000;
 
 int64_t codeClockStop(codeClock_t *clk) {
+    clk->clocksEnd = _rdtsc();
+    fprintf(stderr, "Elapsed clocks: %.3f * 10^9 \n", (double) (clk->clocksEnd - clk->clocksStart) / 1e9);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &clk->end);
     clk->elapsed = (clk->end.tv_sec - clk->start.tv_sec) * MCS_PER_SEC +
                    (clk->end.tv_nsec - clk->start.tv_nsec) / NSEC_PER_MCS;
@@ -94,9 +98,11 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
     int64_t totalFound = 0;
 
     MEASURE_TIME(*clock,
-        for (int idx = 0; idx < requests.wordsCount; idx++) {
-            void *value = hashTableFind(ht, requests.words[idx]);
-            totalFound += (value != NULL);
+        for (int loop = 0; loop < TEST_LOOPS; loop++) {
+            for (int idx = 0; idx < requests.wordsCount; idx++) {
+                void *value = hashTableFind(ht, requests.words[idx]);
+                totalFound += (value != NULL);
+            }
         }
     )
 

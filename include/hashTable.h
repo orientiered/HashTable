@@ -45,9 +45,11 @@ extern "C" {
     hash_t fastCrc32(const void *data, const size_t len);
     hash_t fastCrc32_16(const void *data);
 }
+    #define _HASH_FUNC fastCrc32u
+#else
+    #define _HASH_FUNC crc32
 #endif
 
-#define _HASH_FUNC fastCrc32
 
 
 #if defined(SSE)
