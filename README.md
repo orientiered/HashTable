@@ -1,8 +1,20 @@
-# Hash table
+# Hash table / хэш-таблица
 
-Implementation of associative array with string keys in C using hash table. Optimized with SIMD and asm.
+English version (may be outdated): [README_en.md](README_en.md)
 
-## Compiling
+Ассоциативный массив на основе [хэш-таблицы](https://ru.wikipedia.org/wiki/Хеш-таблица) со строками в качестве ключей.
+
+Проект является лабораторной работой по оптимизации хэш-таблицы для x86_64 с использованием различных способов: написание функций на [ассемблере](source/crc32.s), использование inline ассемблера и интринсиков. 
+
+## Что оптимизируем?
+
+Сценарий использования хэш-таблицы является определяющим фактором для направления оптимизаций. Иногда необходимо быстро добавлять и удалять элементы, иногда искать, а может и всё сразу.
+
+В данной работе было принято решение оптимизировать функцию поиска элемента в таблице по его ключу. При этом операция добавления элемента также заметно ускорится, ведь одна из её частей - проверка на то, что элемента нет в таблице, т.е. его поиск.  
+
+Сценарий использования будет следующим: посчитать частоты только тех слов из файла 2, которые есть в файле 1. Предполагается, что файл 1 много меньше файла 2.
+
+## Компиляция
 
 ```bash
     git clone -b v2 https://github.com/orientiered/HashTable.git
@@ -10,57 +22,94 @@ Implementation of associative array with string keys in C using hash table. Opti
     make BUILD=RELEASE
 ```
 
-If you use clangd, run `make compile_commands`.
+Для генерации конфига `clangd`, используйте `make compile_commands`.
 
-## Hash functions
+## Хэш-функции
 
-Built-in hash functions:
+Есть несколько встроенных хэш-функций (все они написаны для работы с C-строками):
 
-+ `checksum` - sum of ascii codes
-+ `djb2` - simple and fast hashing algorithm
-+ `crc32` - used by default
++ `checksum` - сумма ascii кодов букв строки
++ `djb2` - простой и достаточно быстрый алгоритм хеширования
++ `crc32` - очень популярный алгоритм хеширования, за основу взята версия с таблицей предпосчитанных значений
 
-You use your own hash function specify it in `include/hashTable.h` in `#define _HASH_FUNC`. Requirments for hash function:
+Теоретически можно использовать свою хэш-функцию, указав её в `include/hashTable.h` в `#define _HASH_FUNC`.
+
+При этом она должна иметь следующий вид:
 
 + `hash_t your_hash(const void *ptr);`
-+ `ptr` is pointer to the start of C-string (may change later)
++ `ptr` - указатель на начало C-строки
 
-## Testing conditions
+### Анализ распределения хэш-функций
 
-Test device: Lenovo XiaoXin X16 Pro (2024)
+Для эффективной работы таблицы элементы дожны быть равномерно распределены по бакетам. Для оценки распределения есть функция `hashTableCalcDistribution`, которая считает дисперсию количества элементов в бакетах и строит в консоли график.
+
+TODO: добавить тесты других хэш-функций и графики
+
++ crc32: дисперсия 4.03
+
+## Как тестируем
+
+Машина: Lenovo XiaoXin X16 Pro (2024)
 
 CPU: AMD Ryzen 7 8845H w/ Radeon 780M Graphics 3.80 GHz (8 cores, 16 threads)
 
-Compilers:
+Компилятор: g++ 13.3.0
 
-g++ 13.3.0
 OS: Linux Mint 22.1 x86_64
 
-To test performance i will use ["The Complete Works of William Shakespeare"](https://www.gutenberg.org/cache/epub/100/pg100.txt). [File](shakespeare.txt)
+### Тестовые файлы
 
-1.`testString.txt`: all words are split by lines and everything except letters is removed.
+Указанные в сценарии использования файлы 1 и 2 будут сгенерированы из [полного собрания сочинений Шекспира](https://www.gutenberg.org/cache/epub/100/pg100.txt). [Файл](shakespeare.txt)
 
-2.`testRequests.txt`: search requests for hash table. Consist of 10 millions lines (approx 50mb), 90% of which are lines from `testString.txt` and other 10% are random gibberish with length of 3 to 14 letters. This file is processed 10 times.
+1.`testString.txt`: текст разделяется на слова, всё остальное убирается. Слова расположены по одному на строке.
 
-You could create these files by running `make test_file`. There are options `TESTS`(100 millions by default) and `FOUND_PERCENT` (0.9 by default) that you can tweak.
+2.`testRequests.txt`: набор из 100 миллионов слов (порядка 500МБ), 90% взяты из `testString.txt`, остальные сгенерированы рандомно с длиной от 3 до 14 символов.
 
-Test is done by running `./hasMap.exe`. Program processes test files and measures time that was spent doing requests from `testRequests.txt`.
+Эти файлы генерируются при помощи команды `make test_file`. Можно поменять количество тестов при помощи `TESTS`(100 миллионов по умолчанию) и часть слов, взятых из файла 1 - `FOUND_PERCENT` (0.9 по умолчанию).
 
-Additional info: optimal load factor for hash table is about 2. However i will use load factor 15-17 to increase execution time and see the difference better. (in educational purposes)
+### Измерение времени
 
-## Optimization
+Для измерения времени использовались ~~14 индусов с секундомерами~~ `clock_gettime` в режиме `CLOCK_PROCESS_CPUTIME_ID` и `_rdtsc`. `_rdtsc` возвращает текущее количество тактов процессора, обладает большей точностью и меньшими накладными расходами, но поскольку время теста порядка 5-10 секунд, особо смысла в ней нет: гораздо большую погрешность вносит операционная система.
 
-__All programs were compiled in release version__
+Поскольку оптимизируется функция поиска, то наибольший интерес представляет время, проведенное в цикле подсчёта слов из файла 2. Время, затраченное на подготовку данных и загрузку слов из файла 1 в таблицу, не учитывается, так как это уже совсем другая задача.
 
-### No optimizations, -O0
+### Запуск теста
 
-Program took 15.7 seconds to process requests.
+`make run`.
 
-### No optimizations, -O3 
+Программа пересобирается в релизную версию и запускается на 1 ядре при помощи команды `taskset 0x1`.
 
-13.9 seconds execution time, approx. 53 * 10^9 clock cycles
+### Важно: Load factor
 
-Let's find what bottlenecks performance. I will use `perf` profiling tool with `hotspot` and `flamegraph`.
+Load factor - среднее количество элементов в бакете таблицы. Оптимальным значением является 0.75 - 1.5 (в java 0.75, в C# 1.0), но в учебных целях таблица строится с заведомо большим коэффициентом "заполненности": 15-17. Это сделано для того, чтобы было проще увидеть части, которые занимают много времени при исполнении. В конце будет проведено сравнение с правильной "настройкой" хэш-таблицы.
+
+## Оптимизации
+
+Структура первой версии:
+
++ Память для ключей и значений выделяется при помощи `calloc` (простая наивная реализация)
++ В бакетах элементы хранятся в виде списка (**не массив**), ноды выделяются при помощи `calloc`
++ О длинах строк ничего не известно
+
+### Тесты первой версии
+
+(Odefault - компиляция без ключей оптимизации)
+
+| Версия   | Время, с | Время одного запроса, 10^6 тактов |
+|-------   |----      |-----                              |
+| Odefault |          |                                   |
+| -O3      |          |                                   |
+
+Для профилирования программы будем использовать утилиту `perf` и программу `hotspot` для анализа полученного профиля.
+
+Иногда будут встречаться т.н. `flamegraph`ы - визуализация стека вызовов, отражающая время исполнения каждой функции.
+
+Для запуска профилирования есть команда `make perfTest` - она компилирует релизную версию с флагом `-fno-omit-frame-pointer`, который делает обязательным сохранение rbp в функциях (без этого perf может неправильно интерпретировать stack trace и пропускать названия функций). 
+
+Затем запускает профилирование c флагами `-g` (записать трейс стека) и `--call-graph dwarf`. Частота выборок по умолчанию 10000 Гц, но её можно поменять при помощи опции `FREQ`. **Примечение**: реальная частота снэпшотов perf может отличаться.
+
+#### Профиль 1
+
 
 ![zero_opt](docs/hotspot_0.png)
 

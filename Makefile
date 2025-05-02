@@ -45,7 +45,7 @@ override CFLAGS += -I./$(HDR_DIR)
 
 EXEC_NAME = hashMap.exe
 
-$(EXEC_NAME): $(OBJ_DIR)/hashTable.o $(OBJ_DIR)/perfTester.o $(OBJ_DIR)/crc32.o $(OBJ_DIR)/main.o
+$(EXEC_NAME): $(addprefix $(OBJ_DIR)/,hashTable.o perfTester.o textParse.o crc32.o main.o)
 	$(CC) $(CFLAGS) $^ -o $@
 
 static: $(OBJ_DIR)/hashTable.o
@@ -64,11 +64,16 @@ $(OBJ_DIR)/perfTester.o: $(SRC_DIR)/perfTester.c $(HDR_DIR)/hashTable.h $(HDR_DI
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+
+$(OBJ_DIR)/textParse.o: $(SRC_DIR)/textParse.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTester.h
+	mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTester.h
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY:clean compile_commands test_file perfTest
+.PHONY:clean compile_commands test_file perfTest run
 
 clean:
 	rm build/*
@@ -87,13 +92,18 @@ test_file:
 	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) $(FOUND_PERCENT)
 
 
-FREQ = 15000
+FREQ = 10000
 FLAMEGRAPH_PATH = ~/Utils/FlameGraph/
 
 perfTest:
 	make clean
 	make BUILD=PERF
 	sudo perf record -g --call-graph dwarf -F $(FREQ) ./$(EXEC_NAME)
-	sudo perf script | \
-	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
-	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg
+# 	sudo perf script | \
+# 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
+# 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg
+
+run:
+	make clean
+	make BUILD=RELEASE
+	taskset 0x1 ./$(EXEC_NAME)

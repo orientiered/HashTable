@@ -31,8 +31,11 @@ double codeClockGetTimeMs (codeClock_t *clk);
 int64_t getFileLen(FILE *file);
 
 text_t readFileSplit(const char *fileName);
+void textDtor(text_t *text);
 
 void testPerformance(const char *stringsFile, const char *requestsFile);
+
+#define CODE_CLOCK_MODE CLOCK_THREAD_CPUTIME_ID
 
 #define MEASURE_TIME(clock, ...) \
     codeClockStart(&clock);      \
