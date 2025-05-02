@@ -24,12 +24,12 @@
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
-#define CMP_LEN_FIRST 
+// #define CMP_LEN_FIRST 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
 // Note: SSE is fastest
 #define SSE
 /*! Use hardware-optimized hash function                                              */
-// #define FAST_CRC32
+#define FAST_CRC32
 
 
 #ifndef CMP_LEN_FIRST
@@ -75,7 +75,7 @@ typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
     __m128i key;
-    uint32_t len;
+    CMP_LEN_OPT(uint32_t len;)
 } hashTableNode_t;
 
 typedef struct hashTableLongElem {

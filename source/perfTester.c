@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <assert.h>
 #include <x86intrin.h>
@@ -54,8 +55,9 @@ text_t readFileSplit(const char *fileName) {
 
     fprintf(stderr, "Len = %ji bytes\n", result.length);
 
-    char *text = (char*) calloc( (size_t) result.length + 1, 1); // last byte serves as terminator
-    char **words = (char **) calloc( (size_t) result.length, sizeof(char *));
+    char  *text      = (char*)   calloc( (size_t) result.length + 1, 1); // last byte serves as terminator
+    char **words     = (char **) calloc((size_t) result.length, sizeof(char*));
+    char  *wordsData = (char *)  aligned_alloc(KEY_ALIGNMENT, (size_t) result.length * SMALL_STR_LEN); 
 
     size_t bytesRead = fread(text, 1, (size_t) result.length, file);
     assert(bytesRead == (size_t) result.length);
@@ -63,7 +65,7 @@ text_t readFileSplit(const char *fileName) {
     fclose(file);
 
     int64_t wordCount = 0;
-    char *textPtr = text;
+    char *textPtr = text, *wordsPtr = wordsData;
     int shift = 0;
     sscanf(textPtr, "%*[^a-zA-Z]%n", &shift);
     textPtr += shift;
@@ -76,16 +78,24 @@ text_t readFileSplit(const char *fileName) {
         if (wordLen == 0)
             break;
 
-        words[wordCount++] = textPtr;
-        *(textPtr + wordLen) = '\0';
+
+        words[wordCount++] = wordsPtr;
+        memcpy(wordsPtr, textPtr, wordLen);
+
+        int wordsShift = KEY_ALIGNMENT * ((wordLen + KEY_ALIGNMENT - 1) / KEY_ALIGNMENT);
+        memset(wordsPtr + wordLen, 0, wordsShift-wordLen); 
+        wordsPtr += wordsShift;
 
         textPtr += shift;
 
     }
 
+
     fprintf(stderr, "Total words: %ji\n", wordCount);
+    free(text);
+
     result.wordsCount = wordCount;
-    result.data = text;
+    result.data = wordsData;
     result.words = words;
 
     return result;
@@ -136,22 +146,22 @@ void testPerformance(const char *stringsFile, const char *requestsFile) {
     /* ======================= Statistics ========================================== */
     hashTableCalcDistribution(&ht);
 
-    size_t less16 = 0, less32 = 0;
-    for (size_t bucketIdx = 0; bucketIdx < ht.bucketsCount; bucketIdx++) {
-        hashTableNode_t *node = ht.buckets[bucketIdx].next;
-        while(node) {
-            if (node->len < 16) {
-                less16++;
-                less32++;
-            } else if (node->len < 32) {
-                less32++;
-            }
-            node = node->next;
-        }
-    }
+    // size_t less16 = 0, less32 = 0;
+    // for (size_t bucketIdx = 0; bucketIdx < ht.bucketsCount; bucketIdx++) {
+    //     hashTableNode_t *node = ht.buckets[bucketIdx].next;
+    //     while(node) {
+    //         if (node->len < 16) {
+    //             less16++;
+    //             less32++;
+    //         } else if (node->len < 32) {
+    //             less32++;
+    //         }
+    //         node = node->next;
+    //     }
+    // }
 
-    fprintf(stderr, "length < 16: %zu, length < 32: %zu\nTable size: %zu\n", 
-                                    less16, less32, ht.size);
+    // fprintf(stderr, "length < 16: %zu, length < 32: %zu\nTable size: %zu\n", 
+                                    // less16, less32, ht.size);
 
 
     /* ====================================== Main test ================================== */

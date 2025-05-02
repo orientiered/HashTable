@@ -179,7 +179,7 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashT
             _ERR_RET(HT_MEMORY_ERROR);
         }
 
-        newNode->len = keyLen;
+        CMP_LEN_OPT(newNode->len = keyLen;)
         memcpy(&newNode->key, key, keyLen);
         newNode->value = newValue;
         
@@ -332,9 +332,15 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
         return hashTableLongKeySearch(table, key);
     }
 
+    // Creating local aligned array of chars for key
+    // alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+    // Copying key to it
+    // memcpy(keyCopy, key, keyLen);
+
     // Calculating hash of the string
     // hash_t keyHash   = _HASH_FUNC(key, keyLen);
-    hash_t keyHash   = _HASH_FUNC(key);
+    // hash_t keyHash   = _HASH_FUNC(key);
+    hash_t keyHash      = fastCrc32_16(key); 
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -346,15 +352,11 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
     // Getting first node with actual values
     hashTableNode_t *node = bucket->next;
 
-    // Creating local aligned array of chars for key
-    alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
-    // Copying key to it
-    memcpy(keyCopy, key, keyLen);
     // Loading key to SIMD register
-    MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
+    MMi_t searchKey = _MM_LOAD((MMi_t *) key);
 
     while (node) {
-        if (node->len == keyLen && fastStrcmp(searchKey, node->key) == 0)
+        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->key) == 0)
             return node;
 
         node = node->next;
@@ -463,7 +465,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
             hash_t hash = _HASH_FUNC(&node->key);
 
-            #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+            #if defined(CMP_LEN_FIRST)
                 if (keyLen != node->len) {
                     errprintf("Wrong len of key %s\n", (const char *)&node->key);
                     return HT_NO_KEY;
