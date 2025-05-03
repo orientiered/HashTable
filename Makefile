@@ -45,16 +45,21 @@ override CFLAGS += -I./$(HDR_DIR)
 
 EXEC_NAME = hashMap.exe
 
-$(EXEC_NAME): $(addprefix $(OBJ_DIR)/,hashTable.o perfTester.o textParse.o crc32.o main.o)
+$(EXEC_NAME): $(addprefix $(OBJ_DIR)/,hashTable_v1.o hashTable_v2.o perfTester.o textParse.o crc32.o main.o)
 	$(CC) $(CFLAGS) $^ -o $@
 
 static: $(OBJ_DIR)/hashTable.o
 	mkdir -p $(OBJ_DIR)
 	ar rcs $(OBJ_DIR)/libhashTable.a $^
 
-$(OBJ_DIR)/hashTable.o: $(SRC_DIR)/hashTable.c $(HDR_DIR)/hashTable.h
+#  There are two versions of hashTable, but one of them is deactivated
+$(OBJ_DIR)/hashTable_v1.o: $(SRC_DIR)/hashTable_v1.c $(HDR_DIR)/hashTable.h
 	mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/hashTable_v1.c -o $@
+
+$(OBJ_DIR)/hashTable_v2.o: $(SRC_DIR)/hashTable_v2.c $(HDR_DIR)/hashTable.h
+	mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/hashTable_v2.c -o $@
 
 $(OBJ_DIR)/crc32.o: $(SRC_DIR)/crc32.s
 	mkdir -p $(OBJ_DIR)
@@ -76,7 +81,7 @@ $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTeste
 .PHONY:clean compile_commands test_file perfTest run
 
 clean:
-	rm build/*
+	rm build/* || true
 
 compile_commands:
 	make clean

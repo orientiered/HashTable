@@ -11,6 +11,14 @@
 #define FREE(ptr) free(ptr); ptr = NULL
 #define CALLOC(type, nmemb) (type *) calloc(nmemb, sizeof(type))
 
+/* ================================================= */
+/* There are two versions of this file               */
+/* They use different structure of hashTable         */
+/* One of them is deactivated with define            */
+/* ================================================= */
+
+#if HASH_TABLE_ARCH == 1
+
 /* ============ Hash functions ======================================= */
 hash_t checksum(const void *ptr)
 {
@@ -155,61 +163,62 @@ static hashTableStatus_t deallocateBuckets(hashTable_t *table)
     return HT_SUCCESS;
 }
 
-static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashTableNode_t *bucketHead, void **nodePtr)
+static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashTableNode_t *bucketHead, hashTableNode_t **nodePtr)
 {
     assert(table);
     assert(key);
 
+    assert(bucketHead);
     assert(table->buckets);
 
-    size_t keyLen = strlen(key);
+    hashTableNode_t *newNode = CALLOC(hashTableNode, 1);
 
-    void *newValue = calloc(1, table->valSize);
-    if (!newValue) {
+    if (!newNode) {
+        hprintf("Failed to allocate node\n");
+        _ERR_RET(HT_MEMORY_ERROR);
+    }
+
+    hashTableNode_t *headNode = bucketHead;
+
+    newNode->next  = headNode->next;
+    headNode->next = newNode;
+
+    size_t len   = strlen(key) + 1;
+    size_t alloc_len = len;
+
+    #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+        newNode->len = len-1; // without terminating byte
+    #endif
+
+    #if defined(FAST_STRCMP)
+        // size in aligned_alloc must be multiple of alignment
+        alloc_len += (KEY_ALIGNMENT - len % KEY_ALIGNMENT) % KEY_ALIGNMENT;
+        // allocating aligned memory to later use with SIMD
+        newNode->key = (char *) aligned_alloc(KEY_ALIGNMENT, alloc_len);
+    #else
+        newNode->key = (char *) calloc(alloc_len, 1);
+    #endif
+    
+
+    if (!newNode->key) {
+        hprintf("Failed to allocate memory for key\n");
+        _ERR_RET(HT_MEMORY_ERROR);
+    }
+    #if defined(FAST_STRCMP)
+        // zeroing bytes in allocated memory
+        memset(newNode->key, 0, alloc_len);
+    #endif
+
+    memcpy(newNode->key, key, len);
+
+    newNode->value = calloc(table->valSize, 1);
+    if (!newNode->value) {
         hprintf("Failed to allocate memory for value\n");
         _ERR_RET(HT_MEMORY_ERROR);
     }
 
-    if (keyLen < SMALL_STR_LEN) {
-        assert(bucketHead);
-
-        hashTableNode_t *newNode = CALLOC(hashTableNode_t, 1);
-        if (!newNode) {
-           hprintf("Failed to allocate node\n");
-            _ERR_RET(HT_MEMORY_ERROR);
-        }
-
-        CMP_LEN_OPT(newNode->len = keyLen;)
-        memcpy(&newNode->key, key, keyLen);
-        newNode->value = newValue;
-        
-        newNode->next    = bucketHead->next;
-        bucketHead->next = newNode;
-
-        *nodePtr = newNode; 
-    } else {
-        table->longKeysCount++;
-        table->longKeys = (hashTableLongElem_t *) realloc(table->longKeys, sizeof(*table->longKeys) * table->longKeysCount);
-
-        if (!table->longKeys) {
-            hprintf("Failed to reallocate array with long keys\n");
-            _ERR_RET(HT_MEMORY_ERROR);
-        }
-
-        char *newKey = CALLOC(char, keyLen+1);
-        if (!newKey) {
-            hprintf("Failed to allocate memory for key\n");
-            _ERR_RET(HT_MEMORY_ERROR);
-        }
-
-        memcpy(newKey, key, keyLen+1); 
-
-        table->longKeys[table->longKeysCount-1].len   = keyLen;
-        table->longKeys[table->longKeysCount-1].value = newValue;
-        table->longKeys[table->longKeysCount-1].key   = newKey;
-
-        *nodePtr = table->longKeys + table->longKeysCount - 1;
-    }
+    if (nodePtr)
+        *nodePtr = newNode;
 
     return HT_SUCCESS;
 }
@@ -220,6 +229,7 @@ static hashTableStatus_t deallocateNode(hashTable_t *table, hashTableNode_t *nod
     assert(node);
 
     free(node->value);
+    free(node->key);
     free(node);
 
     return HT_SUCCESS;
@@ -263,14 +273,6 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
 
     _ERR_RET(deallocateBuckets(table));
 
-    for (size_t idx = 0; idx < table->longKeysCount; idx++) {
-        hashTableLongElem_t *elem = table->longKeys + idx;
-        free(elem->key);
-        free(elem->value);
-    }
-
-    free(table->longKeys);
-
     return HT_SUCCESS;
 }
 
@@ -296,26 +298,18 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFFFFFF;
 #endif
 
-static int fastStrcmp(MMi_t a, MMi_t b) {
+static int fastStrcmp(MMi_t a, MMi_t *bptr) {
+    MMi_t b = _MM_LOAD(bptr);
     uint32_t cmpMask = (uint32_t) _MM_CMP_MOVEMASK(a, b);
     return (int) (cmpMask ^ _MM_MASK_CONSTANT);
 }
 
 #endif
 
-static hashTableLongElem_t *hashTableLongKeySearch(hashTable_t *table, const char *key) {
-    for (size_t idx = 0; idx < table->longKeysCount; idx++) {
-        if (strncmp(table->longKeys[idx].key, key, table->longKeys[idx].len + 1) == 0)
-            return table->longKeys + idx;
-         
-    }
-    return NULL;
-}
-
 
 /// @brief Core function of hashTable
 /// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
-static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
+static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
     assert(table);
     assert(key);
     assert(table->buckets);
@@ -323,24 +317,14 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
 
     _VERIFY(table, NULL);
 
-    // Calculating length of the key string
-    const size_t keyLen = strlen(key);
-
-    if (keyLen >= SMALL_STR_LEN) {
-        if (bucketPtr)
-            *bucketPtr = NULL;
-        return hashTableLongKeySearch(table, key);
-    }
-
-    // Creating local aligned array of chars for key
-    // alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
-    // Copying key to it
-    // memcpy(keyCopy, key, keyLen);
+    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
+        // Calculating length of the key string
+        const size_t keyLen = strlen(key);
+    #endif
 
     // Calculating hash of the string
     // hash_t keyHash   = _HASH_FUNC(key, keyLen);
-    // hash_t keyHash   = _HASH_FUNC(key);
-    hash_t keyHash      = fastCrc32_16(key); 
+    hash_t keyHash   = _HASH_FUNC(key);
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -352,16 +336,44 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
     // Getting first node with actual values
     hashTableNode_t *node = bucket->next;
 
-    // Loading key to SIMD register
-    MMi_t searchKey = _MM_LOAD((MMi_t *) key);
 
-    while (node) {
-        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->key) == 0)
-            return node;
+    #ifndef FAST_STRCMP
+        while (node) {
+            if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
+                return node;
 
-        node = node->next;
+            node = node->next;
+        }
+    #else
+        if (keyLen >= SMALL_STR_LEN) {
+            // Key doesn't fit in SIMD register
+            while (node) {
+                if (CMP_LEN_OPT(node->len == keyLen &&) strcmp(node->key, key) == 0 )
+                    return node;
 
-    }
+                node = node->next;
+            }
+
+        } else {
+            // Creating local aligned array of chars for key
+            alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+            // Copying key to it
+            memcpy(keyCopy, key, keyLen+1);
+            // Loading key to SIMD register
+            MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
+
+            while (node) {
+                if (CMP_LEN_OPT(node->len == keyLen &&) 
+                    //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+                    fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                    return node;
+
+                node = node->next;
+
+            }
+        }
+
+    #endif
 
     return NULL;
 }
@@ -380,7 +392,7 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
     _VERIFY(table, HT_ERROR);
 
     hashTableNode_t *bucket = NULL;
-    void *node = hashTableGetBucketAndElement(table, key, &bucket);
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, &bucket);
 
 
     if (!node) {
@@ -388,11 +400,7 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
         _ERR_RET(allocateNode(table, key, bucket, &node) );
     }
 
-    if (bucket) // short key -> element is in bucket
-        memcpy( ((hashTableNode_t *)    node)->value, value, table->valSize);
-    else        // long key  -> element is in array
-        memcpy( ((hashTableLongElem_t *)node)->value, value, table->valSize);
-        
+    memcpy(node->value, value, table->valSize);
 
     return HT_SUCCESS;
 }
@@ -410,15 +418,14 @@ void *hashTableAccess(hashTable_t *table, const char *key)
     _VERIFY(table, NULL);
 
     hashTableNode_t *bucket = NULL;
-    void *node = hashTableGetBucketAndElement(table, key, &bucket);
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, &bucket);
 
     if (!node) {
         table->size++;
         _ERR_RET_PTR(allocateNode(table, key, bucket, &node));
     }
 
-    return (bucket) ? ((hashTableNode_t *)    node)->value
-                    : ((hashTableLongElem_t *)node)->value;
+    return node->value;
 }
 
 
@@ -431,13 +438,9 @@ void *hashTableFind(hashTable_t *table, const char *key)
 
     _VERIFY(table, NULL);
 
-    hashTableNode_t *bucket = NULL;
-    void *node = hashTableGetBucketAndElement(table, key, NULL);
+    hashTableNode_t *node = hashTableGetBucketAndElement(table, key, NULL);
 
-    void *result = (!node)  ? NULL :
-                   (bucket) ? ((hashTableNode_t *)    node)->value :
-                              ((hashTableLongElem_t *)node)->value;
-    return result;
+    return node ? node->value : node;
 }
 
 hashTableStatus_t hashTableVerify(hashTable_t *table)
@@ -461,13 +464,19 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
         while (node) {
             size++;
-            const size_t keyLen = strlen((const char *)&node->key);
+            const size_t keyLen = strlen(node->key);
 
-            hash_t hash = _HASH_FUNC(&node->key);
+            hash_t hash = _HASH_FUNC(node->key);
 
-            #if defined(CMP_LEN_FIRST)
+
+            if (!node->key) {
+                errprintf("Found node without key in bucket %zu\n", bucketIdx);
+                return HT_NO_KEY;
+            }
+
+            #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
                 if (keyLen != node->len) {
-                    errprintf("Wrong len of key %s\n", (const char *)&node->key);
+                    errprintf("Wrong len of key %s\n", node->key);
                     return HT_NO_KEY;
                 }
             #endif
@@ -479,7 +488,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
             if (hash % table->bucketsCount != bucketIdx) {
                 errprintf("Key %s with hash %ju must be in bucket %ju, but lays in bucket %zu\n",
-                             (const char *)&node->key,    hash,     hash % table->bucketsCount,     bucketIdx);
+                             node->key,    hash,     hash % table->bucketsCount,     bucketIdx);
                 return HT_WRONG_HASH;
             }
 
@@ -489,19 +498,6 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
     }
 
-
-    for (size_t idx = 0; idx < table->longKeysCount; idx++) {
-        if (!table->longKeys[idx].key) {
-            errprintf("Node without key in longKeys array\n");
-            return HT_NO_KEY;
-        }
-        if (!table->longKeys[idx].value) {
-            errprintf("Found node without value in longKeys array\n");
-            return HT_NO_VALUE;
-        }
-    }
-
-    size += table->longKeysCount;
     if (size != table->size) {
         errprintf("Expected size to be %zu, but found only %zu elements\n", table->size, size);
         return HT_WRONG_SIZE;
@@ -518,18 +514,17 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
     }
 
     errprintf("hashTable_t[%p] dump:\n"
-              "\tbucketsCount  %zu\n"
-              "\tlongKeysCount %zu\n"
-              "\tvalSize       %zu\n"
-              "\tsize          %zu\n",
-              table, table->bucketsCount, table->longKeysCount, table->valSize, table->size);
+              "\tbucketsCount %zu\n"
+              "\tvalSize      %zu\n"
+              "\tsize         %zu\n",
+              table, table->bucketsCount, table->valSize, table->size);
 
     errprintf("Buckets[%p]:\n", table->buckets);
     for (size_t bucketIdx = 0; bucketIdx < table->bucketsCount; bucketIdx++) {
         hashTableNode_t *current = (table->buckets + bucketIdx)->next;
         if (current) errprintf("\t#%zu \n", bucketIdx);
         while (current) {
-            errprintf("\t\t\"%s\" -> [%p]", (const char *) &current->key, current->value);
+            errprintf("\t\t\"%s\" -> [%p]", current->key, current->value);
             HDBG(
                 if (table->printElem ) {
                     table->printElem(current->value);
@@ -539,18 +534,6 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
             current = current->next;
         }
 
-    }
-
-    errprintf("LongKeys array[%p]: \n", table->longKeys);
-    for (size_t idx = 0; idx < table->longKeysCount; idx++) {
-        hashTableLongElem_t *elem = &table->longKeys[idx];
-        errprintf("\t\t\"%s\" -> [%p]", elem->key, elem->value);
-        HDBG(
-            if (table->printElem ) {
-                table->printElem(elem->value);
-            }
-        )
-        errprintf("\n");
     }
 
     return HT_SUCCESS;
@@ -603,3 +586,4 @@ hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
     return HT_SUCCESS;
 }
 
+#endif

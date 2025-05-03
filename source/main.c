@@ -1,11 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 
 #include "hashTable.h"
 #include "perfTester.h"
@@ -13,9 +9,10 @@
 
 
 
-int main() {
+int main(int argc, const char *argv[]) {
+    bool printLess = (argc > 1) && (strcmp(argv[1], "-s") == 0);
 
-    testPerformance("testStrings.txt", "testRequests.txt");
+    testPerformance("testStrings.txt", "testRequests.txt", printLess);
 
     return 0;
 }

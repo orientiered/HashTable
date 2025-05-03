@@ -21,10 +21,13 @@
 // #define HASH_TABLE_VERIFY
 
 /* ============================ Optimization defines ================================ */
+
+#define HASH_TABLE_ARCH 1
+
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
-// #define CMP_LEN_FIRST 
+#define CMP_LEN_FIRST 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
 // Note: SSE is fastest
 #define SSE
@@ -71,6 +74,8 @@ static const size_t SMALL_STR_LEN = 64;
 #error Define either SSE, AVX2 or AVX512
 #endif
 
+#if HASH_TABLE_ARCH == 2
+
 typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
@@ -95,9 +100,33 @@ typedef struct hashTable {
 
     size_t size;
 
-    // hashFunc_t hash;
     HDBG(int (*printElem)(const void *ptr);)
 } hashTable_t;
+
+#elif HASH_TABLE_ARCH == 1
+
+typedef struct hashTableNode {
+    struct hashTableNode *next;
+    void  *value;
+    char  *key;
+#if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+    uint32_t len;
+#endif
+} hashTableNode_t;
+
+
+typedef struct hashTable {
+    hashTableNode_t *buckets;
+    size_t bucketsCount;
+
+    size_t valSize;
+
+    size_t size;
+
+    HDBG(int (*printElem)(const void *ptr);)
+} hashTable_t;
+
+#endif
 
 HDBG(
 
