@@ -107,3 +107,7 @@ run:
 	make clean
 	make BUILD=RELEASE
 	taskset 0x1 ./$(EXEC_NAME)
+	for i in `seq 1 5`; do \
+		taskset 0x1 ./$(EXEC_NAME) -s;\
+	done;
+

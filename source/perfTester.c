@@ -50,7 +50,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
 }
 
 /* Wrapper for testRequests that loads test data from given files */
-void testPerformance(const char *stringsFile, const char *requestsFile) {
+void testPerformance(const char *stringsFile, const char *requestsFile, bool printLess) {
     text_t words    = readFileSplit(stringsFile);
     text_t requests = readFileSplit(requestsFile);
 
@@ -66,24 +66,33 @@ void testPerformance(const char *stringsFile, const char *requestsFile) {
         }
     )
 
-    fprintf(stderr, "Loaded %ji strings in %.2f ms\n",
-                words.wordsCount, codeClockGetTimeMs(&clock) );
-    fprintf(stderr, "Hash table size = %zu\n", ht.size);
+    if (!printLess) {
+        fprintf(stderr, "Loaded %ji strings in %.2f ms\n",
+                    words.wordsCount, codeClockGetTimeMs(&clock) );
+        fprintf(stderr, "Hash table size = %zu\n", ht.size);
+    }
 
     /* ======================= Statistics ========================================== */
 
-    hashTableCalcDistribution(&ht);
+    if (!printLess)
+        hashTableCalcDistribution(&ht);
 
     /* ======================= Main test  ========================================== */
 
     int64_t totalFound = testRequests(&ht, requests, &clock);
 
-    fprintf(stderr, "Processed requests in %.2f ms\n", codeClockGetTimeMs(&clock));
     double avgTicksPerFind = (double)(clock.clocksEnd - clock.clocksStart) / (double) (requests.wordsCount * TEST_LOOPS);
-    fprintf(stderr, "Avg ticks per search: %.2f\n", avgTicksPerFind); 
+    double timeInMs = codeClockGetTimeMs(&clock);
 
-    fprintf(stderr, "Total requests: %ji, succesfull searches: %ji\n",
-                    requests.wordsCount,                totalFound);
+    if (!printLess) {
+        fprintf(stderr, "Processed requests in %.2f ms\n", timeInMs);
+        fprintf(stderr, "Avg ticks per search: %.2f\n", avgTicksPerFind); 
+
+        fprintf(stderr, "Total requests: %ji, succesfull searches: %ji\n",
+                                            requests.wordsCount,                totalFound);
+    } else {
+        fprintf(stderr, "%.2f %.2f\n", timeInMs, avgTicksPerFind);
+    }
 
     // hashTableDump(&ht);
 

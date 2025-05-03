@@ -33,7 +33,7 @@ int64_t getFileLen(FILE *file);
 text_t readFileSplit(const char *fileName);
 void textDtor(text_t *text);
 
-void testPerformance(const char *stringsFile, const char *requestsFile);
+void testPerformance(const char *stringsFile, const char *requestsFile, bool printLess);
 
 #define CODE_CLOCK_MODE CLOCK_THREAD_CPUTIME_ID
 

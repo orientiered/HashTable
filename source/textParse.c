@@ -37,7 +37,7 @@ text_t readFileSplit(const char *fileName) {
         return result;
     }
 
-    fprintf(stderr, "Len = %ji bytes\n", result.length);
+    // fprintf(stderr, "Len = %ji bytes\n", result.length);
 
     char  *text      = (char*)   calloc( (size_t) result.length + 1, 1); // last byte serves as terminator
     char **words     = (char **) calloc((size_t) result.length, sizeof(char*));
@@ -76,7 +76,7 @@ text_t readFileSplit(const char *fileName) {
     }
 
 
-    fprintf(stderr, "Total words: %ji\n", wordCount);
+    // fprintf(stderr, "Total words: %ji\n", wordCount);
     free(text);
 
     // shrinking allocated arrays
