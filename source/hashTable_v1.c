@@ -306,36 +306,9 @@ static int fastStrcmp(MMi_t a, MMi_t *bptr) {
 
 #endif
 
-
-/// @brief Core function of hashTable
-/// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
-static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
-    assert(table);
-    assert(key);
-    assert(table->buckets);
-    assert(table->bucketsCount);
-
-    _VERIFY(table, NULL);
-
-    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
-        // Calculating length of the key string
-        const size_t keyLen = strlen(key);
-    #endif
-
-    // Calculating hash of the string
-    // hash_t keyHash   = _HASH_FUNC(key, keyLen);
-    hash_t keyHash   = _HASH_FUNC(key);
-    // Determining index of the corresponding bucket
-    size_t bucketIdx = keyHash % table->bucketsCount;
-
-    // Bucket - head node of the list
-    hashTableNode_t *bucket = (table->buckets + bucketIdx);
-    if (bucketPtr)
-        *bucketPtr = bucket;
-
+static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key) {
     // Getting first node with actual values
     hashTableNode_t *node = bucket->next;
-
 
     #ifndef FAST_STRCMP
         while (node) {
@@ -376,6 +349,36 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
     #endif
 
     return NULL;
+}
+
+/// @brief Core function of hashTable
+/// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
+static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const char *key, hashTableNode_t **bucketPtr) {
+    assert(table);
+    assert(key);
+    assert(table->buckets);
+    assert(table->bucketsCount);
+
+    _VERIFY(table, NULL);
+
+    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
+        // Calculating length of the key string
+        const size_t keyLen = strlen(key);
+    #endif
+
+    // Calculating hash of the string
+    // hash_t keyHash   = _HASH_FUNC(key, keyLen);
+    hash_t keyHash   = _HASH_FUNC(key);
+    // Determining index of the corresponding bucket
+    size_t bucketIdx = keyHash % table->bucketsCount;
+
+    // Bucket - head node of the list
+    hashTableNode_t *bucket = (table->buckets + bucketIdx);
+    if (bucketPtr)
+        *bucketPtr = bucket;
+
+
+    return bucketSearch(bucket, key);
 }
 
 

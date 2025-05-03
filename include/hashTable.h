@@ -22,17 +22,18 @@
 
 /* ============================ Optimization defines ================================ */
 
+/*! Hash table architecture version. Read more in README.md */
 #define HASH_TABLE_ARCH 1
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
-#define FAST_STRCMP
+// #define FAST_STRCMP
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
-#define CMP_LEN_FIRST 
+// #define CMP_LEN_FIRST 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
 // Note: SSE is fastest
 #define SSE
 /*! Use hardware-optimized hash function                                              */
-#define FAST_CRC32
+// #define FAST_CRC32
 
 
 #ifndef CMP_LEN_FIRST
@@ -40,6 +41,8 @@
 #else
     #define CMP_LEN_OPT(...) __VA_ARGS__
 #endif
+
+/* ====================== Hash functions =================================== */
 
 typedef uint64_t hash_t;
 typedef hash_t (*hashFunc_t)(const void *ptr);
@@ -59,7 +62,7 @@ extern "C" {
     #define _HASH_FUNC crc32
 #endif
 
-
+/* ====================== Alignment for strings (only with FAST_STRCMP) =============== */
 
 #if defined(SSE)
 static const size_t KEY_ALIGNMENT = 16; // alignment of keys in bytes
@@ -73,6 +76,9 @@ static const size_t SMALL_STR_LEN = 64;
 #else
 #error Define either SSE, AVX2 or AVX512
 #endif
+
+
+/* ========================= Struct definitions ============================= */
 
 #if HASH_TABLE_ARCH == 2
 
@@ -129,11 +135,9 @@ typedef struct hashTable {
 #endif
 
 HDBG(
-
 static int printInt(const void *ptr) {return errprintf("%d", *(const int *)ptr);}
 static int printStr(const void *ptr) {return errprintf("%s", (const char*)ptr);}
 static int printFloat(const void *ptr) {return errprintf("%f", *(const float*)ptr);}
-
 )
 
 typedef enum hashTableStatus {
@@ -148,6 +152,7 @@ typedef enum hashTableStatus {
 } hashTableStatus_t;
 
 
+/* ====================== Hash table functions ================================================ */
 hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount);
 hashTableStatus_t hashTableDtor(hashTable_t *table);
 
