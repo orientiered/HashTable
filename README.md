@@ -214,6 +214,26 @@ Load factor - среднее количество элементов в баке
 
 Теперь сравнение строк суммарно занимает порядка 35% - заметное улучшение.
 
+Попробуем описанный ранее альтернативный метод загрузки ключа в регистр:
+
+``` c
+// 16 FF and 16 00
+const uint8_t mask[32] = 
+{255, 255, 255, 255, 255, 255, 255, 255, 
+    255, 255, 255, 255, 255, 255, 255, 255};
+
+MMi_t searchKey = _mm_loadu_si128((const __m128i_u *) key);
+MMi_t maskReg   = _mm_loadu_si128((const __m128i_u *) (mask + (16 - keyLen)) );
+searchKey = _mm_and_si128(searchKey, maskReg);
+```
+
+Проведём тестирование:
+
++ Время: 12.45 +- 0.04
++ Такты: 472   +- 1.3
+
+Улучшения нет. Пока вернёмся к предыдущему подходу.
+
 ### Crc32 written in asm
 
 `CRC32` takes almost 15% of computing time. This hashing algorithm is so widely used, that CPU's have dedicated instruction to calculate it: `crc32`.
