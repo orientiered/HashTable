@@ -14,10 +14,12 @@ global fastCrc32
 fastCrc32u:
     xor  rax, rax
     dec  rax        ; rax = all ones
+    jmp  .loop_cmp
     .hash_loop:
+        crc32 rax, sil
+        .loop_cmp:
         mov   sil, BYTE [rdi]
         inc   rdi
-        crc32 rax, sil
         test  sil, sil
         jnz   .hash_loop
 
@@ -33,25 +35,15 @@ fastCrc32u:
 ;   rax - crc32 hash
 ;========================================================
 fastCrc32:
-    xor  rax, rax
-    dec  rax        ; rax = all ones
-    
-    jmp  .hash_loop8_cmp
-    .hash_loop8:
-        crc32 rax, QWORD [rdi]
-        add   rdi, 8
-        sub   rsi, 8
-    .hash_loop8_cmp:
-        cmp   rsi, 8
-        jae   .hash_loop8
+    ; xor  rax, rax
+    ; dec  rax        ; rax = all ones
+    mov  rax, 0xFFFFFFFFFFFFFFFF
+    mov  rcx, rsi
 
-    jmp .hash_loop1_cmp
-    .hash_loop1:
-        crc32 rax, BYTE  [rdi]
-        inc   rdi
-        dec   rsi
-    .hash_loop1_cmp:
-        test  rsi, rsi
-        jnz   .hash_loop1
+    .hash_loop:
+        mov  sil, [rdi]
+        inc  rdi
+        crc32 rax, sil
+        loop .hash_loop
 
     ret

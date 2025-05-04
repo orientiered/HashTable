@@ -332,12 +332,16 @@ static hashTableNode_t *bucketSearch(hashTableBucket_t *bucket, const char *key,
     assert(bucket);
     assert(key);
 
-    // Creating local aligned array of chars for key
-    alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
-    // Copying key to it
-    memcpy(keyCopy, key, keyLen);
-    // Loading key to SIMD register
-    MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
+    #ifndef ALIGNED_KEYS 
+        // Creating local aligned array of chars for key
+        alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
+        // Copying key to it
+        memcpy(keyCopy, key, keyLen);
+        // Loading key to SIMD register
+        MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
+    #else
+        MMi_t searchKey = _MM_LOAD((MMi_t *) key);
+    #endif
 
     hashTableNode_t *node = bucket->elements;
     size_t bucketSize = bucket->size;
@@ -371,7 +375,8 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
         return hashTableLongKeySearch(&table->longKeys, key);
     }
 
-    hash_t keyHash = _HASH_FUNC(key); 
+    hash_t keyHash = fastCrc32_16(key); 
+    // hash_t keyHash = _HASH_FUNC(key); 
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 

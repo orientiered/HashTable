@@ -279,7 +279,7 @@ searchKey = _mm_and_si128(searchKey, maskReg);
 
 Этот кусок кода занимает 80% времени в функции `hashTableGetBucketAndElement`, поэтому на него стоит обратить внимание в первую очередь.
 
-Посмотрим на этот код в человеском синтаксисе при помощи [GODBOLT](https://godbolt.org/z/6PYzfqn9e):
+Посмотрим на этот код в человеском синтаксисе (Intel) при помощи [GODBOLT](https://godbolt.org/z/6PYzfqn9e):
 
 ![Disasm of bucketSearch function](docs/godbolt_bucketSearch.png)
 
@@ -295,9 +295,63 @@ searchKey = _mm_and_si128(searchKey, maskReg);
 
 Эти изменения доступны с помощью `#define HASH_TABLE_ARCH 2` - код в файле с первой версией будет удалён условной компиляцией.
 
-### Crc32 written in asm
+#### Тест новой архитектуры хэш-таблицы
 
-`CRC32` takes almost 15% of computing time. This hashing algorithm is so widely used, that CPU's have dedicated instruction to calculate it: `crc32`.
+Результат тестирования для версии, в которой реализованы пункты 1-3:
+
+| Версия | Время,с | Такты | Относительное ускорение |
+|------|--------|--------|--------------------|
+| FastStrcmp | 12.40 +- 0.04 | 470 +- 2  | 1            |  
+| Arch 2     | 2.43 +- 0.01  | 92 +- 0.5 | 5.11 +- 0.05 |
+
+Такой большой прирост заставляет задуматься о корректности работы программы, однако результаты совпадают с предыдущей версией.
+
+Посмотрим на аппаратные счётчики производительности, которые можно получить при помощи `perf stat`:
+
+```
+    Arch 2 version
+     1 927 336 754      cache-references                                                      
+        97 255 494      cache-misses                     #    5,05% of all cache refs         
+    14 096 514 424      cycles                                                                
+    21 523 886 400      instructions                     #    1,53  insn per cycle            
+     4 475 085 513      branches                                                              
+            79 594      faults                                                                
+                 4      migrations                                                   
+
+    FastStrcmp version
+     3 033 857 010      cache-references                                                      
+       640 835 978      cache-misses                     #   21,12% of all cache refs         
+    62 833 324 538      cycles                                                                
+    30 568 617 557      instructions                     #    0,49  insn per cycle            
+     6 959 783 154      branches                                                              
+            79 724      faults                                                                
+                13      migrations                                        
+```
+
+Процент промахов кеша упал в 4 раза.
+
+![Hottest functions in Arch2](docs/hotspot_2.png)
+
+Теперь посмотрим, будут ли изменения, если добавить пункты 5(требование выравнивания для ключей)  и/или 4(хранение значения рядом с нодой) из предложенных ранее.
+
+Выровненные ключи (5) позволяют загрузить их в SIMD регистр одной инструкцией, без маскирования.
+
+| Версия | Время,с | Такты | Относительное ускорение |
+|------|--------|--------|--------------------|
+| Arch 2     | 2.43 +- 0.01  | 92 +- 0.5 | 1|
+| Arch 2 + aligned keys |  2.38 +- 0.01 | 90.1 +- 0.4 | 1.02 +-0.01 |
+
+Ускорение практически в пределах погрешности. Это связано с тем, что современные процессоры обрабатывают доступ к невыровненной памяти фактически без падения производительности. На данном этапе выгода, получаемая от этого требования к пользовательским данным, слишком мала, чтобы эта оптимизация имела смысл.
+
+TODO: сделать архитектурную оптимизацию 4.
+
+### Оптимизация хэш-функции CRC32
+
+![Hottest functions in Arch2](docs/hotspot_2.png)
+
+Следующий кандидат на оптимизацию - функция хеширования. CRC32 настолько популярен, что проектировщики процессоров добавили специализированные инструкции для аппаратного ускорения подсчёта хеша этим алгоритмом.
+
+**Примечание**: CRC32 может строиться на разных полиномах. Выбор полинома не влияет на производительность, но может немного влиять на равномерность распределения хэш-функции. Версия алгоритма, которую я использую по умолчанию, построена на полиноме `0xEDB88320`, в то время как соответсвующая инструкция x86_64 использует полином `0x11EDC6F41`.
 
 ```asm
 ;========================================================
@@ -310,20 +364,40 @@ searchKey = _mm_and_si128(searchKey, maskReg);
 fastCrc32u:
     xor  rax, rax
     dec  rax        ; rax = all ones
+    jmp  .loop_cmp
     .hash_loop:
+        crc32 rax, sil
+        .loop_cmp:
         mov   sil, BYTE [rdi]
         inc   rdi
-        crc32 rax, sil
         test  sil, sil
         jnz   .hash_loop
 
     ret
 ```
 
-Execution time: 9.2 seconds, 34.9 * 10^9 clock cycles
+Время исполнения: 2231.97ms +- 11.01ms
 
-![crc32u_hotspot](docs/hotspot_crc32u.png)
+Такты: 84.66 +- 0.42
 
-![crc32u_flame](docs/flame_crc32u.png)
+**Примечание**: на моих тестовых даннах дисперсия распределения элементов по бакетам с этой хеш-функцией составила 3.96, в то время как на предыдущей была 4.03
 
-Program now works faster, but hashing function takes more cycles. Probable explanation: `crc32` uses different polynom, which has better distribution. On my test file dispersion of elements in bucket decreased from 4.03 to 3.93.
+Если воспользоваться тем, что ключи выравнены, то получим функцию, которая считает хэш 16 байт всего за 3 инструкции:
+
+```c
+// Calculate crc32 hash of 16 bytes of data
+hash_t fastCrc32_16(const void *data) {
+    hash_t crc = 0xFFFFFFFF;
+    asm("crc32q  (%[ptr]), %[crc]\n\t"
+        "crc32q 8(%[ptr]), %[crc]\n" 
+      : [crc] "+r" (crc)
+      : [ptr] "r" (data));
+    return crc;
+}
+```
+
+Результаты выполнения с ней:
+
+Время: 2196.49ms +- 5.78ms
+
+Такты: 83.31 +- 0.22
