@@ -186,7 +186,7 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashT
     size_t len   = strlen(key) + 1;
     size_t alloc_len = len;
 
-    #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+    #if defined(CMP_LEN_FIRST)
         newNode->len = len-1; // without terminating byte
     #endif
 
@@ -306,7 +306,7 @@ static int fastStrcmp(MMi_t a, MMi_t *bptr) {
 
 #endif
 
-static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key) {
+static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key, const size_t keyLen) {
     // Getting first node with actual values
     hashTableNode_t *node = bucket->next;
 
@@ -336,9 +336,8 @@ static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key) {
             MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
 
             while (node) {
-                if (CMP_LEN_OPT(node->len == keyLen &&) 
-                    //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
-                    fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+                if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
                     return node;
 
                 node = node->next;
@@ -378,7 +377,7 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
         *bucketPtr = bucket;
 
 
-    return bucketSearch(bucket, key);
+    return bucketSearch(bucket, key, keyLen);
 }
 
 
@@ -477,7 +476,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
                 return HT_NO_KEY;
             }
 
-            #if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+            #if defined(CMP_LEN_FIRST)
                 if (keyLen != node->len) {
                     errprintf("Wrong len of key %s\n", node->key);
                     return HT_NO_KEY;

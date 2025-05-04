@@ -320,6 +320,21 @@ static hashTableLongElem_t *hashTableLongKeySearch(hashTable_t *table, const cha
     return NULL;
 }
 
+static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key, const size_t keyLen) {
+    // Getting first node with actual values
+    hashTableNode_t *node = bucket->next;
+    // Loading key to SIMD register
+
+    MMi_t searchKey = _MM_LOAD((MMi_t *) key);
+
+    while (node) {
+        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->key) == 0)
+            return node;
+
+        node = node->next;
+
+    }
+}
 
 /// @brief Core function of hashTable
 /// Search element in table, return pointer to it (or NULL) and write pointer of corresponding bucket   
@@ -331,24 +346,16 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
 
     _VERIFY(table, NULL);
 
-    // Calculating length of the key string
     const size_t keyLen = strlen(key);
 
     if (keyLen >= SMALL_STR_LEN) {
+        // long key -> search in separate array
         if (bucketPtr)
             *bucketPtr = NULL;
         return hashTableLongKeySearch(table, key);
     }
 
-    // Creating local aligned array of chars for key
-    // alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
-    // Copying key to it
-    // memcpy(keyCopy, key, keyLen);
-
-    // Calculating hash of the string
-    // hash_t keyHash   = _HASH_FUNC(key, keyLen);
-    // hash_t keyHash   = _HASH_FUNC(key);
-    hash_t keyHash      = fastCrc32_16(key); 
+    hash_t keyHash = fastCrc32_16(key); 
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -357,21 +364,7 @@ static void *hashTableGetBucketAndElement(hashTable_t *table, const char *key, h
     if (bucketPtr)
         *bucketPtr = bucket;
 
-    // Getting first node with actual values
-    hashTableNode_t *node = bucket->next;
-
-    // Loading key to SIMD register
-    MMi_t searchKey = _MM_LOAD((MMi_t *) key);
-
-    while (node) {
-        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->key) == 0)
-            return node;
-
-        node = node->next;
-
-    }
-
-    return NULL;
+    return bucketSearch(bucket, key, keyLen);
 }
 
 

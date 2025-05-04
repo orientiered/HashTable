@@ -27,7 +27,7 @@ CFLAGS := -g -D _DEBUG -DHASH_TABLE_DEBUG -ggdb3 -std=c++17 -O0 -march=native -W
 
 PERF_FLAGS := -fno-omit-frame-pointer
 
-RELEASE_FLAGS := -DNDEBUG -g  -std=c++17 -march=native
+RELEASE_FLAGS := -DNDEBUG -g -O3 -std=c++17 -march=native
 
 BUILD := DEBUG
 ASAN = 1
@@ -87,7 +87,7 @@ compile_commands:
 	make clean
 	bear -- make BUILD=DEBUG
 
-TESTS = 100000000 # 100 millions
+TESTS = 10000000 # 10 millions
 FOUND_PERCENT = 0.9
 TEST_FILE = shakespeare.txt
 test_file:

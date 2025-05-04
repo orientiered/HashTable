@@ -26,7 +26,7 @@
 #define HASH_TABLE_ARCH 1
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
-// #define FAST_STRCMP
+#define FAST_STRCMP
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
@@ -115,7 +115,7 @@ typedef struct hashTableNode {
     struct hashTableNode *next;
     void  *value;
     char  *key;
-#if defined(CMP_LEN_FIRST) || defined(FAST_STRCMP)
+#if defined(CMP_LEN_FIRST)
     uint32_t len;
 #endif
 } hashTableNode_t;

@@ -12,7 +12,7 @@ English version (may be outdated): [README_en.md](README_en.md)
 
 В данной работе было принято решение оптимизировать функцию поиска элемента в таблице по его ключу. При этом операция добавления элемента также заметно ускорится, ведь одна из её частей - проверка на то, что элемента нет в таблице, т.е. его поиск.  
 
-Сценарий использования будет следующим: посчитать частоты только тех слов из файла 2, которые есть в файле 1. Предполагается, что файл 1 много меньше файла 2.
+Сценарий использования будет следующим: посчитать частоты только тех слов из файла 2, которые есть в файле 1. Предполагается, что файл 1 много меньше файла 2. Кроме того предлолагается, что большинство слов короткие (меньше 16 символов), что близко к правде для человеских языков (по разным [источникам](https://qna.habr.com/q/554389) в русском языке средняя длина слова порядка 6.5 букв, в английском 5.5 букв).
 
 ## Компиляция
 
@@ -63,9 +63,11 @@ OS: Linux Mint 22.1 x86_64
 
 1.`testString.txt`: текст разделяется на слова, всё остальное убирается. Слова расположены по одному на строке.
 
-2.`testRequests.txt`: набор из 100 миллионов слов (порядка 500МБ), 90% взяты из `testString.txt`, остальные сгенерированы рандомно с длиной от 3 до 14 символов.
+2.`testRequests.txt`: набор из 10 миллионов слов (порядка 50МБ), 90% взяты из `testString.txt`, остальные сгенерированы рандомно с длиной от 3 до 14 символов.
 
-Эти файлы генерируются при помощи команды `make test_file`. Можно поменять количество тестов при помощи `TESTS`(100 миллионов по умолчанию) и часть слов, взятых из файла 1 - `FOUND_PERCENT` (0.9 по умолчанию).
+Файл 2 обрабатывается `TEST_LOOPS` раз, по умолчанию 10.
+
+Эти файлы генерируются при помощи команды `make test_file`. Можно поменять количество тестов при помощи `TESTS`(10 миллионов по умолчанию) и часть слов, взятых из файла 1 - `FOUND_PERCENT` (0.9 по умолчанию).
 
 ### Измерение времени
 
@@ -125,25 +127,45 @@ Load factor - среднее количество элементов в баке
 
 #### Профиль 1
 
+При помощи `hotspot` рассмотрим наиболее горячие функции.
 
-![zero_opt](docs/hotspot_0.png)
+![no_opt](docs/hotspot_0.png)
+(реальная частота 7.585KHz)
 
-![no_opt](docs/flame_naive.svg)
+Отсортируем их по собственному времени. Видно, что наиболее ресурсоёмкой оказалась функция сравнения строк, а точнее `__strcmp_evex` - уже оптимизированная под AVX512 функция сравнения строк. Следующие кандидаты - функция поиска в списке и подсчёт хеша.
 
-Most part of the time takes strcmp, search function and crc32.
+### Оптимизация strcmp
 
-We will start optimizations with strcmp. Most of the words are shorter than 16 letters, so we can use SIMD instructions to compare short strings faster. In order to find short strings faster, i will add field with length of the string.
+Как мы выяснили раньше, первым кандидатом на оптимизацию является `strcmp`. Несмотря на то, что библиотечная версия уже оптимизирована с применением SIMD, она ничего не знает о выравнивании и длине строк. Поэтому можно хранить ключи в таблице с выравниванием `KEY_ALIGNMENT`, и, возможно, длину ключей. Перейдём непосредственно к реализации.
 
-### Strcmp optimization
-
-Changes:
-
-+ `aligned_alloc` instead of `calloc` to ensure correct alignment for SIMD
-+ When you know lengths of the strings, you could first check them on equality. This optimization is more algorithimic but it will be stupid not to implement it. This optimization is enabled with `#define CMP_LEN_FIRST`.
-+ New hashTableFind algorithm:
-    Length of the key is calculated first. If it is more than `SMALL_STR_LEN` (16 chars), than previous implementation is used. This optimization can be enabled with `#define FAST_STRCMP` Core of new implementation can be seen below:
++ `aligned_alloc` вместо `calloc` создаст необходимое выравнивание для строк, чтобы их можно было быстро загрузить в SIMD регистр.
++ Байты после конца строки нулевые до конца выравненного блока. Это позволит не беспокоиться о том, что в SIMD регистр попадёт часть другой строки или вообще чужая память.
++ Если известна длина строки, то логично сначала сравнить её. Несмотря на то, что это алгоритмическая оптимизация, не добавлять её довольно глупо. Она может быть включена при помощи `#define CMP_LEN_FIRST`.
++ Оптимизированный `fastStrcmp`:
 
     ```c
+    typedef __m128i MMi_t;
+    #define _MM_LOAD(ptr) _mm_load_si128(ptr)
+    #define _MM_CMP_MOVEMASK(a, b) _mm_movemask_epi8(_mm_cmpeq_epi8(a, b))
+    static const uint32_t _MM_MASK_CONSTANT = 0xFFFF;
+
+    static int fastStrcmp(MMi_t a, MMi_t *bptr) {
+        MMi_t b = _MM_LOAD(bptr);
+        //k-th bit of cmpMask = (a[k] == b[k])
+        uint32_t cmpMask = (uint32_t) _MM_CMP_MOVEMASK(a, b); 
+        //_MM_MASK_CONSTANT is 0xFFFF for SSE and 0xFFFFFFFFF for AVX2
+        return (int) (cmpMask ^ _MM_MASK_CONSTANT); 
+    }
+    ```
+
+    В SSE4.2 есть специализированные инструкции для сравнения строк, но у них [задержка](https://www.laruence.com/sse/) минимум в 10 тактов, в то время как комбинация `cmpeq` и `movemask` требует суммарно 3 такта.
+
+    Кроме того, эта функция предполагает, что ключ был загружен в SIMD регистр. Посмотрим, как это делается:
+
+    ```c
+    /// Part of the bucketSearch function
+    keyLen = strlen(key);
+
     if (keyLen >= SMALL_STR_LEN) {
         // Key doesn't fit in SIMD register
         while (node) {
@@ -162,9 +184,8 @@ Changes:
         MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
 
         while (node) {
-            if (CMP_LEN_OPT(node->len == keyLen &&) 
-                //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
-                fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+            //! Alignment of node->key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+            if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
                 return node;
 
             node = node->next;
@@ -173,45 +194,25 @@ Changes:
     }
     ```
 
-    Where `fastStrcmp` is
+    `CMP_LEN_OPT(...)` раскрывается в свои аргументы, если есть `#define CMP_LEN_FIRST`. Так можно отключить эту оптимизацию и убрать одно из полей в структуре ноды.
 
-    ```c
-    typedef __m128i MMi_t;
-    #define _MM_LOAD(ptr) _mm_load_si128(ptr)
-    #define _MM_CMP_MOVEMASK(a, b) _mm_movemask_epi8(_mm_cmpeq_epi8(a, b))
-    static const uint32_t _MM_MASK_CONSTANT = 0xFFFF;
-    static int fastStrcmp(MMi_t a, MMi_t *bptr) {
-        MMi_t b = _MM_LOAD(bptr);
-        //k-th bit of cmpMask = (a[k] == b[k])
-        uint32_t cmpMask = (uint32_t) _MM_CMP_MOVEMASK(a, b); 
-        //_MM_MASK_CONSTANT is 0xFFFF for SSE and 0xFFFFFFFFF for AVX2
-        return (int) (cmpMask ^ _MM_MASK_CONSTANT); 
-    }
-    ```
+    Использование `memcpy`, даже несмотря на то, что компилятор инлайнит эту функцию, может быть довольно медленным. Возможно лучшим решением будет невыровненная загрузка 16 байт в `xmm` регистр и маскирование лишних байт после конца строки. Проверим эту теорию позже.
 
-### Only fastStrcmp, without `CMP_LEN_FIRST'
+#### Результаты тестирования
 
-Execution time: 11.0 seconds, approx. 42 * 10^9 clock cycles.
-![fastcmp_opt](docs/hotspot_faststrcmp.png)
-![faststrcmp](docs/flame_faststrcmp.png)
+| `FAST_STRCMP` | `CMP_LEN_FIRST` | Время, с | Тактов |
+|---------------|-----------------|----------|--------|
+| Да | Нет | 12.40 +- 0.04 | 470 +- 2 |
+| Нет | Да | 13.18 +- 0.06 | 500 +- 2 |
+| Да | Да | 12.43 +- 0.06 | 471 +- 2 |
 
-Now strcmp takes approx. 30% of computing time - great improvement.
+Время работы уменьшилось в 1.2 раза. При этом предварительное сравнение длин строк не улучшило результат.
 
-### Comparing length of the string first, without `FAST_STRCMP`
+Проведём профилирование, отключив предварительное сравнение длин строк:
 
-Execution time: 10.4 seconds, 39.5 * 10^9 clock cycles.
-![cmplen_hotspot](docs/hotspot_cmpLenFirst.png)
-![cmplen_flame](docs/flame_cmpLenFirst.png)
+![strcmp_opt](docs/hotspot_1.png)
 
-In that case algorithimic optimization yields better result, is not hardware specific and can be implemented easier.
-
-### Both strcmp optimizations (`CMP_LEN_FIRST` + `FAST_STRCMP`)
-
-Execution time: 9.5 seconds, 36 * 10^9 clock cycles.
-![bothcmp_opt](docs/hotspot_BothStrcmp.png)
-![bothcmp_opt](docs/flame_BothStrcmp.png)
-
-These optimizations work well together.
+Теперь сравнение строк суммарно занимает порядка 35% - заметное улучшение.
 
 ### Crc32 written in asm
 
