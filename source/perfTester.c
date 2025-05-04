@@ -66,6 +66,9 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
         }
     )
 
+    hashTableVerify(&ht);
+    // hashTableDump(&ht);
+
     if (!printLess) {
         fprintf(stderr, "Loaded %ji strings in %.2f ms\n",
                     words.wordsCount, codeClockGetTimeMs(&clock) );
@@ -95,6 +98,39 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
     }
 
     // hashTableDump(&ht);
+
+    if (!printLess) {
+        FILE *result = fopen("wordCounts.txt", "w");
+        assert(result);
+
+        #if HASH_TABLE_ARCH == 2
+        for (int bidx = 0; bidx < ht.bucketsCount; bidx++) {
+            hashTableBucket_t bucket = ht.buckets[bidx];
+            for (int idx = 0; idx < bucket.size; idx++) {
+                hashTableNode_t *node = bucket.elements+idx;
+                fprintf(result, "%s %d\n", &node->keyMM, *(int *)node->value);
+            }
+        }
+
+        hashTableBucket_t bucket = ht.longKeys;
+        for (int idx = 0; idx < bucket.size; idx++) {
+            hashTableNode_t *node = bucket.elements+idx;
+            fprintf(result, "%s %d\n", node->keyPtr, *(int *)node->value);
+        }
+        #else
+        for (int bidx = 0; bidx < ht.bucketsCount; bidx++) {
+            hashTableNode_t *node = ht.buckets[bidx].next;
+            while (node) {
+                fprintf(result, "%s %d\n", node->key, *(int *)node->value);
+                node = node->next;
+            }
+
+        }
+        
+        #endif
+
+        fclose(result);
+    }
 
     textDtor(&words);
     textDtor(&requests);

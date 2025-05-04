@@ -23,7 +23,7 @@
 /* ============================ Optimization defines ================================ */
 
 /*! Hash table architecture version. Read more in README.md */
-#define HASH_TABLE_ARCH 1
+#define HASH_TABLE_ARCH 2
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
@@ -83,28 +83,28 @@ static const size_t SMALL_STR_LEN = 64;
 #if HASH_TABLE_ARCH == 2
 
 typedef struct hashTableNode {
-    struct hashTableNode *next;
-    void  *value;
-    __m128i key;
+    union {
+    __m128i keyMM;  ///< Key is stored in node when it doesn't exceed SMALL_STR_LEN
+    char *keyPtr;   ///< Otherwise we use pointer to string stored somewhere else
+    };
+    void  *value;   ///< Pointer to data stored in element
     CMP_LEN_OPT(uint32_t len;)
 } hashTableNode_t;
 
-typedef struct hashTableLongElem {
-    char *key;
-    void *value;
-    uint32_t len;
-} hashTableLongElem_t;
+typedef struct hashTableBucket {
+    hashTableNode_t *elements;
+    size_t size;
+} hashTableBucket_t;
 
 typedef struct hashTable {
-    hashTableNode_t *buckets;
+    hashTableBucket_t *buckets;  ///< Array of buckets 
     size_t bucketsCount;
 
-    hashTableLongElem_t *longKeys;
-    size_t longKeysCount;
+    hashTableBucket_t longKeys; ///< Separate array for elements with long keys 
 
-    size_t valSize;
+    size_t valSize; ///< Size of data stored in element
 
-    size_t size;
+    size_t size;    ///< Number of elements
 
     HDBG(int (*printElem)(const void *ptr);)
 } hashTable_t;

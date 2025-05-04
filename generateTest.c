@@ -116,12 +116,14 @@ void writeTestsToFile(const char *fileName, text_t text, int tests, float foundP
     }
 
     setvbuf(output, NULL, _IOFBF, BUFFERING_SIZE);
+    int wordsFromText = 0;
 
     for (int cnt = 0; cnt < tests; cnt++) {
         float normalRand = (float) rand() / RAND_MAX;
         bool wordFromText = normalRand <= foundPercent;
 
         if (wordFromText) {
+            wordsFromText++;
             int idx = rand() % text.wordsCount;
             fputs(text.words[idx], output);
         } else {
@@ -133,6 +135,7 @@ void writeTestsToFile(const char *fileName, text_t text, int tests, float foundP
         fputc('\n', output);
     }
 
+    printf("Words from text: %d\n", wordsFromText);
     fclose(output);
     return;
 }

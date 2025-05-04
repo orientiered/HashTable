@@ -67,7 +67,7 @@ text_t readFileSplit(const char *fileName) {
         words[wordCount++] = wordsPtr;
         memcpy(wordsPtr, textPtr, wordLen);
 
-        int wordsShift = KEY_ALIGNMENT * ((wordLen + KEY_ALIGNMENT - 1) / KEY_ALIGNMENT);
+        int wordsShift = KEY_ALIGNMENT * ((wordLen+1 + KEY_ALIGNMENT - 1) / KEY_ALIGNMENT);
         memset(wordsPtr + wordLen, 0, wordsShift-wordLen); 
         wordsPtr += wordsShift;
 
@@ -81,7 +81,7 @@ text_t readFileSplit(const char *fileName) {
 
     // shrinking allocated arrays
     words     = (char **) realloc(words, wordCount * sizeof(char*));
-    wordsData = (char *)  realloc(wordsData, (size_t)(wordsPtr - wordsData) );
+    // wordsData = (char *)  realloc(wordsData, (size_t)(wordsPtr - wordsData+1) );
 
     result.wordsCount = wordCount;
     result.data = wordsData;
