@@ -234,6 +234,67 @@ searchKey = _mm_and_si128(searchKey, maskReg);
 
 Улучшения нет. Пока вернёмся к предыдущему подходу.
 
+### Оптимизация `bucketSearch`
+
+Из тестовых данных предыдущего раздела следует, что теперь нужно оптимизировать функцию `bucketSearch`, которая проводит поиск элемента по ключу в пределах одного бакета.
+
+1. Компилятор инлайнит эту функцию
+2. Самая горячая часть - непосредственно цикл
+
+```c
+    while (node) {
+            //! Alignment of node->key is guaranteed by aligned_calloc with KEY_ALIGNMENT
+            if (fastStrcmp(searchKey, (MMi_t *) node->key) == 0)
+                return node;
+
+            node = node->next;
+    }
+```
+
+Это логично и подтверждается `perf`ом:
+
+```
+             ↓ jne       170  
+  0,24  126:   vmovdqa   -0x40(%rbp),%xmm1
+  0,23         test      %rbx,%rbx
+             ↓ jne       14c  
+             ↓ jmp       1f0  
+               data16    cs nopw 0x0(%rax,%rax,1)
+ 11,86  140:   mov       (%rbx),%rbx
+ 11,72         test      %rbx,%rbx
+  0,00       ↓ je        1f0  
+ 11,20  14c:   mov       0x10(%rbx),%rax
+ 11,69         vpcmpeqb  (%rax),%xmm1,%xmm0
+ 11,87         vpmovmskb %xmm0,%eax
+ 11,25         cmp       $0xffff,%eax
+  0,00       ↑ jne       140  
+ 10,04       ↑ jmp       cc   
+               data16    cs nopw 0x0(%rax,%rax,1)
+               nop            
+  0,04  170:   movzbl    (%rax,%rdx,1),%eax
+  0,17         mov       %al,(%rdi,%rdx,1)
+  0,05       ↑ jmp       126  
+               nop            
+```
+
+Этот кусок кода занимает 80% времени в функции `hashTableGetBucketAndElement`, поэтому на него стоит обратить внимание в первую очередь.
+
+Посмотрим на этот код в человеском синтаксисе при помощи [GODBOLT](https://godbolt.org/z/6PYzfqn9e):
+
+![Disasm of bucketSearch function](docs/godbolt_bucketSearch.png)
+
+Можно заметить, что компилятор сгенерировал отличный код. Добиться лучшей производительности в этом месте при помощи переписывания на ассемблере скорее всего не получится.
+
+Прибегнем к архитектурным оптимизациям. В этом цикле часто происходит обращение к памяти, причём куски этой памяти могут лежать далеко не последовательно, т.к. они выделялись при помощи `calloc`. Чтобы улучшить локальность, можно
+
+1. Переделать список элементов в бакете в массив
+2. Хранить короткие ключи прямо в структуре в `__m128i`
+3. Длинные ключи хранить в отдельном массиве
+4. Добавить опцию хранения значения рядом с нодой
+5. Возможно требовать от передаваемых для поиска ключей выравнивание и нули до конца выровненного блока
+
+Эти изменения доступны с помощью `#define HASH_TABLE_ARCH 2` - код в файле с первой версией будет удалён условной компиляцией.
+
 ### Crc32 written in asm
 
 `CRC32` takes almost 15% of computing time. This hashing algorithm is so widely used, that CPU's have dedicated instruction to calculate it: `crc32`.
