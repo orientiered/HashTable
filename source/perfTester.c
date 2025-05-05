@@ -84,8 +84,10 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
 
     /* ======================= Statistics ========================================== */
 
-    if (!printLess)
+    if (!printLess) {
         hashTableCalcDistribution(&ht);
+        hashTableDumpDistribution(&ht, "distribution.txt");
+    }
 
     /* ======================= Main test  ========================================== */
 

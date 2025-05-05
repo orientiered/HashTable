@@ -621,19 +621,41 @@ hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
 
     float disp = sqrt(meanOfSquares - mean*mean);
 
-    fprintf(stderr, "Average elements in bucket: %.2f\n"
+    errprintf("Average elements in bucket: %.2f\n"
                     "Dispersion: %.2f\n", mean, disp);
 
-    fprintf(stderr, "=========== Distribution bar chart =========\n");
+    errprintf("=========== Distribution bar chart =========\n");
     for (int barIdx = 0; barIdx < BARS_COUNT; barIdx++) {
         int64_t filledChars = BARS_COUNT * BAR_LENGTH * bars[barIdx] / sum;
         fputc('|', stderr);
         while((filledChars--) > 0) fputc('#', stderr);
         fputc('\n', stderr);
     }
-    fprintf(stderr, "============================================\n");
+    errprintf("============================================\n");
 
     return HT_SUCCESS;
 }
+
+hashTableStatus_t hashTableDumpDistribution(hashTable_t *table, const char *fileName) {
+    assert(table);
+    assert(fileName);
+
+    FILE *out = fopen(fileName, "w");
+    if (!out) {
+        errprintf("Failed to open file %s\n", fileName);
+        _ERR_RET(HT_ERROR);
+    }
+
+    for (size_t idx = 0; idx < table->bucketsCount; idx++) {
+        fprintf(out, "%zu\n", table->buckets[idx].size);
+    }
+
+    fprintf(out, "%zu\n", table->longKeys.size);
+
+    fclose(out);
+
+    return HT_SUCCESS;
+}
+
 
 #endif

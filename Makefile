@@ -92,10 +92,10 @@ TESTS = 10000000 # 10 millions
 FOUND_PERCENT = 0.9
 TEST_FILE = shakespeare.txt
 test_file:
-	g++ generateTest.c -o generateTest.exe
-	g++ prepareText.c  -o prepareText.exe
-	./prepareText.exe $(TEST_FILE) testStrings.txt
-	./generateTest.exe testStrings.txt testRequests.txt $(TESTS) $(FOUND_PERCENT)
+	g++ scripts/generateTest.c -o scripts/generateTest.exe
+	g++ scripts/prepareText.c  -o scripts/prepareText.exe
+	./scripts/prepareText.exe $(TEST_FILE) testStrings.txt
+	./scripts/generateTest.exe testStrings.txt testRequests.txt $(TESTS) $(FOUND_PERCENT)
 
 
 FREQ = 10000

@@ -598,4 +598,10 @@ hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
     return HT_SUCCESS;
 }
 
+hashTableStatus_t hashTableDumpDistribution(hashTable_t *table, const char *fileName) {
+    TODO("Implement dump distribution in ARCH 1\n");
+    return HT_SUCCESS;
+}
+
+
 #endif

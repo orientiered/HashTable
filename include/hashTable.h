@@ -30,14 +30,15 @@
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST 
 /*! Assume that passed keys are aligned and have trailing zeros until the end of aligned block */
-// #define ALIGNED_KEYS
+#define ALIGNED_KEYS
 /*! Store value near the node*/
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
-// Note: SSE is fastest
+//! Doesn't work with ARCH 2, no guarantees to work with ARCH 1 either
+//! Reason: SSE works faster and most of the strings are shorter than 16 bytes
 #define SSE
 /*! Use hardware-optimized hash function                                              */
-#define FAST_CRC32
+// #define FAST_CRC32
 
 
 #ifndef CMP_LEN_FIRST
@@ -51,7 +52,7 @@
 typedef uint64_t hash_t;
 typedef hash_t (*hashFunc_t)(const void *ptr);
 
-hash_t checksum(const void *ptr);
+hash_t checksum(const void *ptr);   ///< sum of ascii characters of the string
 hash_t djb2(const void *ptr);
 hash_t crc32(const void *data);
 
@@ -61,7 +62,11 @@ extern "C" {
     hash_t fastCrc32(const void *data, const size_t len);
     hash_t fastCrc32_16(const void *data);
 }
-    #define _HASH_FUNC fastCrc32u
+    #ifdef ALIGNED_KEYS
+        #define _HASH_FUNC fastCrc32_16
+    #else
+        #define _HASH_FUNC fastCrc32u
+    #endif
 #else
     #define _HASH_FUNC crc32
 #endif
@@ -96,19 +101,18 @@ typedef struct hashTableNode {
 } hashTableNode_t;
 
 typedef struct hashTableBucket {
-    hashTableNode_t *elements;
-    size_t size;
+    hashTableNode_t *elements;  ///< Array of nodes with key and value
+    size_t size;                ///< Number of nodes in bucket
 } hashTableBucket_t;
 
 typedef struct hashTable {
-    hashTableBucket_t *buckets;  ///< Array of buckets 
-    size_t bucketsCount;
+    hashTableBucket_t *buckets; ///< Array of buckets 
+    size_t bucketsCount;        ///< Number of buckets
 
     hashTableBucket_t longKeys; ///< Separate array for elements with long keys 
 
-    size_t valSize; ///< Size of data stored in element
-
-    size_t size;    ///< Number of elements
+    size_t valSize;             ///< Size of data stored in element
+    size_t size;                ///< Number of elements
 
     HDBG(int (*printElem)(const void *ptr);)
 } hashTable_t;
@@ -157,8 +161,17 @@ typedef enum hashTableStatus {
 
 
 /* ====================== Hash table functions ================================================ */
+/*!
+    @brief Construct new hashTable
+    @param valueSize Size of the data in bytes that correspond to key
+    @param bucketsCount Number of buckets to create in hashTable. In future may become starting number of buckets. 
+*/
 hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount);
+/// @brief Destruct hashTable and free it's memory
 hashTableStatus_t hashTableDtor(hashTable_t *table);
+
+//! If ALIGNED_KEYS is defined, following functions expect key to be aligned on KEY_ALIGNMENT boundary 
+//! and have trailing zeros up to the end of the aligned block
 
 /// @brief Insert element in hashTable or rewrite it's value if already inserted
 hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const void *value);
@@ -167,12 +180,21 @@ hashTableStatus_t hashTableInsert(hashTable_t *table, const char *key, const voi
 /// @return Ptr to element or NULL in case of error
 void *hashTableAccess(hashTable_t *table, const char *key);
 
+/// @brief Find value by key in hash table
+/// @return Ptr to value of NULL if there's no element with given key
 void *hashTableFind(hashTable_t *table, const char *key);
 
+/// @brief Check whether table is built correctly
 hashTableStatus_t hashTableVerify(hashTable_t *table);
+
+/// @brief Print dump of given hash table to stderr 
 hashTableStatus_t hashTableDump(hashTable_t *table);
+
+/// @brief Calculate disperion of size of buckets and plot graph of it's distribution
 hashTableStatus_t hashTableCalcDistribution(hashTable_t *table);
 
+/// @brief Dump number of elements in each bucket to the file
+hashTableStatus_t hashTableDumpDistribution(hashTable_t *table, const char *fileName);
 
 /*========================== Debugging tools =================================*/
 static void htStackTrace(const char *file, int line, const char *function);
