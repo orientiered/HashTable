@@ -38,7 +38,7 @@
 //! Reason: SSE works faster and most of the strings are shorter than 16 bytes
 #define SSE
 /*! Use hardware-optimized hash function                                              */
-// #define FAST_CRC32
+#define FAST_CRC32
 
 
 #ifndef CMP_LEN_FIRST

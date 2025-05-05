@@ -62,7 +62,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
     text_t requests = fileReader(requestsFile);
 
     hashTable ht = {};
-    hashTableCtor(&ht, sizeof(int), 1500);
+    hashTableCtor(&ht, sizeof(int), 17000);
     HDBG(ht.printElem = printInt;)
 
     codeClock_t clock;
