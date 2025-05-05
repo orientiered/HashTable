@@ -51,8 +51,15 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
 
 /* Wrapper for testRequests that loads test data from given files */
 void testPerformance(const char *stringsFile, const char *requestsFile, bool printLess) {
-    text_t words    = readFileSplit(stringsFile);
-    text_t requests = readFileSplit(requestsFile);
+    
+    #ifndef ALIGN_USER_KEYS
+    text_t (*fileReader)(const char *fileName) =readFileSplitUnaligned;
+    #else
+    text_t (*fileReader)(const char *fileName) =readFileSplitAligned;
+    #endif
+
+    text_t words    = fileReader(stringsFile);
+    text_t requests = fileReader(requestsFile);
 
     hashTable ht = {};
     hashTableCtor(&ht, sizeof(int), 1500);

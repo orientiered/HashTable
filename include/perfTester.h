@@ -7,6 +7,8 @@
 
 static const int TEST_LOOPS = 10;
 
+#define ALIGN_USER_KEYS
+
 typedef struct {
     char *data;
     int64_t length;
@@ -30,7 +32,9 @@ double codeClockGetTimeMs (codeClock_t *clk);
 
 int64_t getFileLen(FILE *file);
 
-text_t readFileSplit(const char *fileName);
+text_t readFileSplitAligned(const char *fileName);
+text_t readFileSplitUnaligned(const char *fileName);
+
 void textDtor(text_t *text);
 
 void testPerformance(const char *stringsFile, const char *requestsFile, bool printLess);

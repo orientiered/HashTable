@@ -375,7 +375,7 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
         return hashTableLongKeySearch(&table->longKeys, key);
     }
 
-    hash_t keyHash = fastCrc32_16(key); 
+    hash_t keyHash = _HASH_FUNC(key); 
     // hash_t keyHash = _HASH_FUNC(key); 
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;

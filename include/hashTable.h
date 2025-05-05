@@ -30,7 +30,7 @@
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST 
 /*! Assume that passed keys are aligned and have trailing zeros until the end of aligned block */
-#define ALIGNED_KEYS
+// #define ALIGNED_KEYS
 /*! Store value near the node*/
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
