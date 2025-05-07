@@ -283,17 +283,14 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
 #if defined(FAST_STRCMP)
 
 #ifdef SSE
-    typedef __m128i MMi_t;
     #define _MM_LOAD(ptr) _mm_load_si128(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm_movemask_epi8(_mm_cmpeq_epi8(a,b))
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFF;
 #elif defined(AVX2)
-    typedef __m256i MMi_t;
     #define _MM_LOAD(ptr) _mm256_load_si256(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b))
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFFFFFF;
 #elif defined(AVX512)
-    typedef __m512i MMi_t;
     #define _MM_LOAD(ptr) _mm512_load_si512(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm512_cmpeq_epi16_mask(a,b)
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFFFFFF;

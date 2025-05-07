@@ -30,6 +30,8 @@ double codeClockGetTimeMs (codeClock_t *clk) {return (double) clk->elapsed / MCS
 
 /* ========================== Tester functions ========================== */
 
+int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests, codeClock_t *clock);
+
 /* Main stress test function */
 int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests, codeClock_t *clock) {
     int64_t totalFound = 0;
@@ -113,18 +115,18 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
         assert(result);
 
         #if HASH_TABLE_ARCH == 2
-        for (int bidx = 0; bidx < ht.bucketsCount; bidx++) {
+        for (size_t bidx = 0; bidx < ht.bucketsCount; bidx++) {
             hashTableBucket_t bucket = ht.buckets[bidx];
-            for (int idx = 0; idx < bucket.size; idx++) {
+            for (size_t idx = 0; idx < bucket.size; idx++) {
                 hashTableNode_t *node = bucket.elements+idx;
-                fprintf(result, "%s %d\n", &node->keyMM, *(int *)node->value);
+                fprintf(result, "%s %d\n", (const char *)&node->key.MM, *(int *)node->value);
             }
         }
 
         hashTableBucket_t bucket = ht.longKeys;
-        for (int idx = 0; idx < bucket.size; idx++) {
+        for (size_t idx = 0; idx < bucket.size; idx++) {
             hashTableNode_t *node = bucket.elements+idx;
-            fprintf(result, "%s %d\n", node->keyPtr, *(int *)node->value);
+            fprintf(result, "%s %d\n", node->key.Ptr, *(int *)node->value);
         }
         #else
         for (int bidx = 0; bidx < ht.bucketsCount; bidx++) {

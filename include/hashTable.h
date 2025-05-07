@@ -74,12 +74,15 @@ extern "C" {
 /* ====================== Alignment for strings (only with FAST_STRCMP) =============== */
 
 #if defined(SSE)
+typedef __m128i MMi_t;
 static const size_t KEY_ALIGNMENT = 16; // alignment of keys in bytes
 static const size_t SMALL_STR_LEN = 16; // lenght of string with terminating byte that fits into simd register
 #elif defined(AVX2)
+typedef __m256i MMi_t;
 static const size_t KEY_ALIGNMENT = 32; // alignment of keys in bytes
 static const size_t SMALL_STR_LEN = 32; // lenght of string with terminating byte that fits into simd register
 #elif defined(AVX512)
+typedef __m512i MMi_t;
 static const size_t KEY_ALIGNMENT = 64; // alignment of keys in bytes
 static const size_t SMALL_STR_LEN = 64;
 #else
@@ -91,11 +94,20 @@ static const size_t SMALL_STR_LEN = 64;
 
 #if HASH_TABLE_ARCH == 2
 
+union StrOrPtr {
+    MMi_t MM;
+    char *Ptr;
+};
+
+union ImmOrPtr {
+    MMi_t MM;
+    void *Ptr;
+};
+
 typedef struct hashTableNode {
-    union {
-    __m128i keyMM;  ///< Key is stored in node when it doesn't exceed SMALL_STR_LEN
-    char *keyPtr;   ///< Otherwise we use pointer to string stored somewhere else
-    };
+    union StrOrPtr key; ///< Key is stored in node when it doesn't exceed SMALL_STR_LEN
+    ///< Otherwise we use pointer to string stored somewhere else
+
     void  *value;   ///< Pointer to data stored in element
     CMP_LEN_OPT(uint32_t len;)
 } hashTableNode_t;

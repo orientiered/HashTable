@@ -219,7 +219,7 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashT
 
     // Copying key 
     if (keyLen < SMALL_STR_LEN) {
-        memcpy(&newNode->keyMM, key, keyLen);
+        memcpy(&newNode->key.MM, key, keyLen);
     } else {
         char *newKey = CALLOC(char, keyLen+1);
         memcpy(newKey, key, keyLen);
@@ -227,7 +227,7 @@ static hashTableStatus_t allocateNode(hashTable_t *table, const char *key, hashT
             hprintf("Failed to allocate memory for key\n");
             _ERR_RET(HT_MEMORY_ERROR);
         }
-        newNode->keyPtr = newKey;
+        newNode->key.Ptr = newKey;
     }
 
     CMP_LEN_OPT(newNode->len = keyLen);
@@ -246,7 +246,7 @@ static hashTableStatus_t deallocateShortKeyNode(hashTableNode_t *node) {
 static hashTableStatus_t deallocateLongKeyNode(hashTableNode_t *node) {
     assert(node);
     FREE(node->value);
-    FREE(node->keyPtr);
+    FREE(node->key.Ptr);
     return HT_SUCCESS;
 }
 
@@ -287,17 +287,14 @@ hashTableStatus_t hashTableDtor(hashTable_t *table)
 #if defined(FAST_STRCMP)
 
 #ifdef SSE
-    typedef __m128i MMi_t;
     #define _MM_LOAD(ptr) _mm_load_si128(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm_movemask_epi8(_mm_cmpeq_epi8(a,b))
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFF;
 #elif defined(AVX2)
-    typedef __m256i MMi_t;
     #define _MM_LOAD(ptr) _mm256_load_si256(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b))
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFFFFFF;
 #elif defined(AVX512)
-    typedef __m512i MMi_t;
     #define _MM_LOAD(ptr) _mm512_load_si512(ptr)
     #define _MM_CMP_MOVEMASK(a, b) _mm512_cmpeq_epi16_mask(a,b)
     static const uint32_t _MM_MASK_CONSTANT = 0xFFFFFFFF;
@@ -318,7 +315,7 @@ static hashTableNode_t *hashTableLongKeySearch(hashTableBucket_t *longKeys, cons
     const size_t keyLen = strlen(key);  // TODO: length of key is known before this function is called
 
     for (size_t idx = 0; idx < bucketSize; idx++) {
-        if (CMP_LEN_OPT(node->len == keyLen &&) strncmp(key, node->keyPtr, keyLen) == 0)
+        if (CMP_LEN_OPT(node->len == keyLen &&) strncmp(key, node->key.Ptr, keyLen) == 0)
             return node;
         
         node++;
@@ -347,7 +344,7 @@ static hashTableNode_t *bucketSearch(hashTableBucket_t *bucket, const char *key,
     size_t bucketSize = bucket->size;
 
     for (size_t idx = 0; idx < bucketSize; idx++) {
-        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->keyMM) == 0)
+        if (CMP_LEN_OPT(node->len == keyLen &&) fastStrcmp(searchKey, node->key.MM) == 0)
             return node;
         
         node++;
@@ -368,15 +365,14 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
 
     const size_t keyLen = strlen(key);
 
+    // long key -> search in separate array
     if (keyLen >= SMALL_STR_LEN) {
-        // long key -> search in separate array
         if (bucketPtr)
             *bucketPtr = &table->longKeys;
         return hashTableLongKeySearch(&table->longKeys, key);
     }
 
     hash_t keyHash = _HASH_FUNC(key); 
-    // hash_t keyHash = _HASH_FUNC(key); 
     // Determining index of the corresponding bucket
     size_t bucketIdx = keyHash % table->bucketsCount;
 
@@ -475,23 +471,23 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
         hashTableNode_t *node = bucket->elements;
 
         for (size_t idx = 0; idx < bucket->size; idx++) {
-            const size_t keyLen = strlen((const char *)&node->keyMM);
+            const size_t keyLen = strlen((const char *)&node->key.MM);
             if (keyLen >= SMALL_STR_LEN) {
                 errprintf("Long key found in buckets with short keys\n");
                 return HT_NO_KEY;
             }
 
-            hash_t hash = _HASH_FUNC(&node->keyMM);
+            hash_t hash = _HASH_FUNC(&node->key.MM);
 
             if (hash % table->bucketsCount != bucketIdx) {
                 errprintf("Key %s with hash %ju must be in bucket %ju, but lays in bucket %zu\n",
-                             (const char *)&node->keyMM,    hash,     hash % table->bucketsCount,     bucketIdx);
+                             (const char *)&node->key.MM,    hash,     hash % table->bucketsCount,     bucketIdx);
                 return HT_WRONG_HASH;
             }
 
             #if defined(CMP_LEN_FIRST)
                 if (keyLen != node->len) {
-                    errprintf("Wrong len of key %s\n", (const char *)&node->keyMM);
+                    errprintf("Wrong len of key %s\n", (const char *)&node->key.MM);
                     return HT_NO_KEY;
                 }
             #endif
@@ -509,15 +505,15 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
 
     hashTableNode_t *node = table->longKeys.elements;
     for (size_t idx = 0; idx < table->longKeys.size; idx++) {
-        const size_t keyLen = strlen(node->keyPtr);
+        const size_t keyLen = strlen(node->key.Ptr);
         if (keyLen < SMALL_STR_LEN) {
-            errprintf("Short key found in buckets with long keys: %zu, %s\n", keyLen, node->keyPtr);
+            errprintf("Short key found in buckets with long keys: %zu, %s\n", keyLen, node->key.Ptr);
             return HT_NO_KEY;
         }
 
         #if defined(CMP_LEN_FIRST)
             if (keyLen != node->len) {
-                errprintf("Wrong len of key %s\n", (const char *)&node->keyMM);
+                errprintf("Wrong len of key %s\n", (const char *)&node->key.MM);
                 return HT_NO_KEY;
             }
         #endif
@@ -527,7 +523,7 @@ hashTableStatus_t hashTableVerify(hashTable_t *table)
             return HT_NO_VALUE;
         }
 
-        if (!node->keyPtr) {
+        if (!node->key.Ptr) {
             errprintf("Node without key in longKeys array\n");
             return HT_NO_KEY;
         }
@@ -567,7 +563,7 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
 
         for (size_t elemIdx = 0; elemIdx < table->buckets[bucketIdx].size; elemIdx++) {
 
-            errprintf("\t\t\"%s\" -> [%p]", (const char *) &node->keyMM, node->value);
+            errprintf("\t\t\"%s\" -> [%p]", (const char *) &node->key.MM, node->value);
             HDBG(
                 if (table->printElem ) {
                     table->printElem(node->value);
@@ -582,7 +578,7 @@ hashTableStatus_t hashTableDump(hashTable_t *table)
     errprintf("LongKeys array[%p]: \n", &table->longKeys);
     for (size_t idx = 0; idx < table->longKeys.size; idx++) {
         hashTableNode_t *elem = table->longKeys.elements + idx;
-        errprintf("\t\t\"%s\" -> [%p]", elem->keyPtr, elem->value);
+        errprintf("\t\t\"%s\" -> [%p]", elem->key.Ptr, elem->value);
         HDBG(
             if (table->printElem ) {
                 table->printElem(elem->value);
