@@ -129,7 +129,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
             fprintf(result, "%s %d\n", node->key.Ptr, *(int *)node->value);
         }
         #else
-        for (int bidx = 0; bidx < ht.bucketsCount; bidx++) {
+        for (size_t bidx = 0; bidx < ht.bucketsCount; bidx++) {
             hashTableNode_t *node = ht.buckets[bidx].next;
             while (node) {
                 fprintf(result, "%s %d\n", node->key, *(int *)node->value);

@@ -34,8 +34,7 @@
 /*! Store value near the node*/
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
-//! Doesn't work with ARCH 2, no guarantees to work with ARCH 1 either
-//! Reason: SSE works faster and most of the strings are shorter than 16 bytes
+//! Note: SSE is fastest 
 #define SSE
 /*! Use hardware-optimized hash function                                              */
 #define FAST_CRC32
@@ -60,10 +59,22 @@ hash_t crc32(const void *data);
 extern "C" { 
     hash_t fastCrc32u(const void *data);
     hash_t fastCrc32(const void *data, const size_t len);
+
     hash_t fastCrc32_16(const void *data);
+    hash_t fastCrc32_32(const void *data);
+    hash_t fastCrc32_64(const void *data);
+
+    #ifdef SSE
+        #define FAST_CRC32_2k fastCrc32_16
+    #elif defined(AVX2)
+        #define FAST_CRC32_2k fastCrc32_32
+    #elif defined(AVX512) 
+        #define FAST_CRC32_2k fastCrc32_64
+    #endif
+
 }
     #ifdef ALIGNED_KEYS
-        #define _HASH_FUNC fastCrc32_16
+        #define _HASH_FUNC FAST_CRC32_2k
     #else
         #define _HASH_FUNC fastCrc32u
     #endif

@@ -127,7 +127,8 @@ hash_t crc32(const void *data)
 }
 
 // Calculate crc32 hash of 16 bytes of data
-hash_t fastCrc32_16(const void *data) {
+hash_t fastCrc32_16(const void *data) 
+{
     hash_t crc = 0xFFFFFFFF;
     asm("crc32q  (%[ptr]), %[crc]\n\t"
         "crc32q 8(%[ptr]), %[crc]\n" 
@@ -135,6 +136,35 @@ hash_t fastCrc32_16(const void *data) {
       : [ptr] "r" (data));
     return crc;
 }
+
+hash_t fastCrc32_32(const void *data) 
+{
+    hash_t crc = 0xFFFFFFFF;
+    asm("crc32q   (%[ptr]), %[crc]\n\t"
+        "crc32q  8(%[ptr]), %[crc]\n\t" 
+        "crc32q 16(%[ptr]), %[crc]\n\t" 
+        "crc32q 24(%[ptr]), %[crc]\n" 
+      : [crc] "+r" (crc)
+      : [ptr] "r" (data));
+    return crc;
+}
+
+hash_t fastCrc32_64(const void *data) 
+{
+    hash_t crc = 0xFFFFFFFF;
+    asm("crc32q   (%[ptr]), %[crc]\n\t"
+        "crc32q  8(%[ptr]), %[crc]\n\t" 
+        "crc32q 16(%[ptr]), %[crc]\n\t" 
+        "crc32q 24(%[ptr]), %[crc]\n\t" 
+        "crc32q 32(%[ptr]), %[crc]\n\t" 
+        "crc32q 40(%[ptr]), %[crc]\n\t" 
+        "crc32q 48(%[ptr]), %[crc]\n\t" 
+        "crc32q 56(%[ptr]), %[crc]\n" 
+      : [crc] "+r" (crc)
+      : [ptr] "r" (data));
+    return crc;
+}
+
 
 /* ================== Allocators ==================================================== */
 static hashTableStatus_t deallocateShortKeyNode(hashTableNode_t *node);
