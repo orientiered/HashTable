@@ -79,7 +79,7 @@ $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTeste
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY:clean compile_commands test_file perfTest run
+.PHONY:clean compile_commands test_file perfTest run dump
 
 clean:
 	rm build/* || true
@@ -109,11 +109,22 @@ perfTest:
 # 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
 # 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg
 
+CPU_TARGET_FREQ_LOW = 5.14GHz
+CPU_TARGET_FREQ_HIGH = 5.14GHz
+
+CPU_DEFAULT_FREQ_LOW = 400MHz
+CPU_DEFAULT_FREQ_HIGH = 5.14GHz
+
 run:
 	make clean
 	make BUILD=RELEASE
+#   sudo cpupower frequency-set -d $(CPU_TARGET_FREQ_LOW) -u $(CPU_TARGET_FREQ_HIGH)
 	taskset 0x1 ./$(EXEC_NAME)
 	for i in `seq 1 5`; do \
 		taskset 0x1 ./$(EXEC_NAME) -s;\
 	done;
+#   sudo cpupower frequency-set -d $(CPU_DEFAULT_FREQ_LOW) -u $(CPU_DEFAULT_FREQ_HIGH)
 
+
+dump:
+	objdump -D --visualize-jumps -Mintel ./$(EXEC_NAME) > dump.s

@@ -27,15 +27,21 @@
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
 #define FAST_STRCMP
+
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
-// #define CMP_LEN_FIRST 
+// #define CMP_LEN_FIRST
+
 /*! Assume that passed keys are aligned and have trailing zeros until the end of aligned block */
 #define ALIGNED_KEYS
-/*! Store value near the node*/
+// #define ALTERNATIVE_KEY_LOAD
+
+/*! Store short values (up to SMALL_STR_LEN bytes) in the node*/
+#define SHORT_VALUES_IN_NODE
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
 //! Note: SSE is fastest 
 #define SSE
+
 /*! Use hardware-optimized hash function                                              */
 #define FAST_CRC32
 
@@ -117,9 +123,13 @@ union ImmOrPtr {
 
 typedef struct hashTableNode {
     union StrOrPtr key; ///< Key is stored in node when it doesn't exceed SMALL_STR_LEN
-    ///< Otherwise we use pointer to string stored somewhere else
+                        ///< Otherwise we use pointer to string stored somewhere else
 
-    void  *value;   ///< Pointer to data stored in element
+    #ifdef SHORT_VALUES_IN_NODE
+    union ImmOrPtr value;   ///< Data stored in element (or ptr to it)
+    #else
+    void  *value;
+    #endif
     CMP_LEN_OPT(uint32_t len;)
 } hashTableNode_t;
 
@@ -206,6 +216,9 @@ void *hashTableAccess(hashTable_t *table, const char *key);
 /// @brief Find value by key in hash table
 /// @return Ptr to value of NULL if there's no element with given key
 void *hashTableFind(hashTable_t *table, const char *key);
+
+/// @brief Extract ptr to value from given node of hashTable
+void *getValueFromNode(const hashTable_t *table, hashTableNode_t *node);
 
 /// @brief Check whether table is built correctly
 hashTableStatus_t hashTableVerify(hashTable_t *table);

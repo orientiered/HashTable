@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="297mm"
+   height="154mm"
+   viewBox="0 0 297 154"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="hashTable_list.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:connector-spacing="3"
+     inkscape:zoom="0.84096521"
+     inkscape:cx="435.80876"
+     inkscape:cy="321.65421"
+     inkscape:window-width="1704"
+     inkscape:window-height="973"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2">
+    <rect
+       x="176.4329"
+       y="373.88592"
+       width="223.7538"
+       height="95.288675"
+       id="rect7625" />
+    <marker
+       style="overflow:visible"
+       id="Arrow3"
+       refX="0.54476535"
+       refY="-0.14571388"
+       orient="auto-start-reverse"
+       inkscape:stockid="Arrow3"
+       markerWidth="5.4091372"
+       markerHeight="9"
+       viewBox="0 0 4.2071068 7"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:round"
+         d="M 3,-3 0,0 3,3"
+         id="arrow3"
+         transform="rotate(180,0.125,0)"
+         sodipodi:nodetypes="ccc" />
+    </marker>
+    <inkscape:path-effect
+       effect="skeletal"
+       id="path-effect6102"
+       is_visible="true"
+       lpeversion="1"
+       pattern="M 0,4.9921385 C 0,2.2364781 2.2364781,0 4.9921385,0 7.747799,0 9.984277,2.2364781 9.984277,4.9921385 9.984277,7.747799 7.747799,9.984277 4.9921385,9.984277 2.2364781,9.984277 0,7.747799 0,4.9921385 Z"
+       copytype="single_stretched"
+       prop_scale="1"
+       scale_y_rel="false"
+       spacing="0"
+       normal_offset="0"
+       tang_offset="0"
+       prop_units="false"
+       vertical_pattern="false"
+       hide_knot="false"
+       fuse_tolerance="0" />
+    <rect
+       x="53.398649"
+       y="184.98783"
+       width="168.62455"
+       height="62.120299"
+       id="rect5374" />
+    <rect
+       x="48.717924"
+       y="262.53573"
+       width="191.2901"
+       height="69.848661"
+       id="rect4205" />
+    <rect
+       x="61.372482"
+       y="281.18374"
+       width="169.37438"
+       height="37.417024"
+       id="rect4145" />
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Слой 2">
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163"
+       width="57.382996"
+       height="25.273046"
+       x="9.4868717"
+       y="65.380692"
+       ry="6.3359518" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3"
+       width="57.382996"
+       height="25.273046"
+       x="88.283829"
+       y="65.512985"
+       ry="6.3359518" />
+    <rect
+       style="fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:12.78, 12.78;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect11266"
+       width="69.304405"
+       height="113.78227"
+       x="219.06786"
+       y="21.510191"
+       ry="4.1039515" />
+  </g>
+  <g
+     inkscape:label="Слой 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="20.213003"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-7"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="33.474144"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-3"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="60.652199"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-56"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="73.749222"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="47.11652"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-7-1"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="87.010361"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-3-2"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="113.80717"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-56-7"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="126.90421"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5-0"
+       width="47.087097"
+       height="13.26114"
+       x="161.4397"
+       y="100.2715"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5-0-9"
+       width="47.087097"
+       height="13.26114"
+       x="231.72134"
+       y="26.066319"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5-0-3"
+       width="47.087097"
+       height="13.26114"
+       x="238.43866"
+       y="56.058739"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#fe0202;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5-0-1"
+       width="47.087097"
+       height="13.26114"
+       x="222.54739"
+       y="84.932953"
+       ry="0" />
+    <rect
+       style="fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:0.921007;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect163-3-6-5-0-94"
+       width="47.087097"
+       height="13.26114"
+       x="238.43866"
+       y="113.80717"
+       ry="0" />
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text4143"
+       style="white-space:pre;shape-inside:url(#rect4145);display:inline;fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:4.40315;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:3.175px;fill:#f2e2e2;fill-opacity:1;stroke:#000000;stroke-width:1.165;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="28.250038"
+       y="78.01722"
+       id="text4151"><tspan
+         id="tspan4149"
+         style="stroke-width:1.165"
+         x="28.250038"
+         y="78.01722"
+         sodipodi:role="line" /></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,2.7374587,0.85605113)"
+       id="text4203"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:53.3333px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';letter-spacing:3.38px;white-space:pre;shape-inside:url(#rect4205);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.75748;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"><tspan
+         x="48.71875"
+         y="309.87491"
+         id="tspan81562">&quot;hello&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.265;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="91.771027"
+       y="82.77282"
+       id="text5199"><tspan
+         sodipodi:role="line"
+         id="tspan5197"
+         style="font-size:14.1111px;stroke-width:0.265;stroke-dasharray:none"
+         x="91.771027"
+         y="82.77282">1062914</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text5372"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:53.3333px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;shape-inside:url(#rect5374);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.00157;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.264999;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="20.381994"
+       y="62.146091"
+       id="text5380"><tspan
+         sodipodi:role="line"
+         id="tspan5378"
+         style="stroke-width:0.265"
+         x="20.381994"
+         y="62.146091">Ключ</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.264999;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="101.49215"
+       y="62.146091"
+       id="text5384"><tspan
+         sodipodi:role="line"
+         id="tspan5382"
+         style="stroke-width:0.265"
+         x="101.49215"
+         y="62.146091">Хеш</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.264999;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="162.3042"
+       y="16.353102"
+       id="text5388"><tspan
+         sodipodi:role="line"
+         id="tspan5386"
+         style="stroke-width:0.265"
+         x="162.3042"
+         y="16.353102">Buckets</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 66.869865,78.017216 v 0"
+       id="path6429"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-dasharray:none;fill-opacity:1;marker-end:url(#Arrow3)"
+       d="m 66.869865,78.017216 21.413962,0.132291"
+       id="path6433"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text7623"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:53.3333px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;shape-inside:url(#rect7625);display:inline;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.89134;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+    <g
+       id="g78116"
+       transform="translate(-13.673919,2.9255595)">
+      <rect
+         style="fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.565;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         id="rect7902"
+         width="83.667343"
+         height="13.201416"
+         x="35.944328"
+         y="98.850441"
+         ry="0" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.4056px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.065;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         x="37.914799"
+         y="108.65526"
+         id="text7637"><tspan
+           sodipodi:role="line"
+           id="tspan7635"
+           style="font-size:13.4056px;fill:#000000;fill-opacity:1;stroke-width:0.065;stroke-dasharray:none"
+           x="37.914799"
+           y="108.65526">Хеш-функция</tspan></text>
+    </g>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="M 77.576846,78.083361 64.104081,101.776"
+       id="path7765"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow3)"
+       d="M 145.66682,78.149509 161.4397,67.282768"
+       id="path10484"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow3)"
+       d="M 208.52679,67.282768 231.72134,39.327457"
+       id="path10867"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow3)"
+       d="m 264.12544,39.796289 0.24276,15.522528"
+       id="path10996"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline" />
+    <path
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#fe0202;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow3)"
+       d="m 280.55281,69.040458 -13.5131,15.431991"
+       id="path11060"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.065;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow3)"
+       d="m 230.43066,97.824127 8.008,15.983033"
+       id="path11120"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.96963px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;inline-size:24.3958;display:inline;fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.223005;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="175.87558"
+       y="28.342623"
+       id="text12150"
+       transform="matrix(1.617406,0,0,1.6927969,-118.24866,-17.239054)"><tspan
+         x="175.87558"
+         y="28.342623"
+         id="tspan81566"><tspan
+           style="fill:#000000"
+           id="tspan81564">Список 1
+</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.96963px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;inline-size:24.3958;display:inline;fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.223005;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="175.87558"
+       y="28.342623"
+       id="text12150-7"
+       transform="matrix(1.617406,0,0,1.6927969,-118.48085,-4.6460252)"><tspan
+         x="175.87558"
+         y="28.342623"
+         id="tspan81570"><tspan
+           style="fill:#000000"
+           id="tspan81568">Список 2
+</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.96963px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;inline-size:24.3958;display:inline;fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.223005;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="175.87558"
+       y="28.342623"
+       id="text12150-8"
+       transform="matrix(1.617406,0,0,1.6927969,-118.47238,22.047153)"><tspan
+         x="175.87558"
+         y="28.342623"
+         id="tspan81576"><tspan
+           style="fill:#000000"
+           id="tspan81572">Список </tspan><tspan
+           style="fill:#000000"
+           id="tspan81574">k
+</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.96963px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';white-space:pre;inline-size:24.3958;display:inline;fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.223005;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="175.87558"
+       y="28.342623"
+       id="text12150-4"
+       transform="matrix(1.617406,0,0,1.6927969,-118.60891,89.410545)"><tspan
+         x="175.87558"
+         y="28.342623"
+         id="tspan81582"><tspan
+           style="fill:#000000"
+           id="tspan81578">Список </tspan><tspan
+           style="fill:#000000"
+           id="tspan81580">n
+</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.369001;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="231.08618"
+       y="94.377853"
+       id="text36006"><tspan
+         sodipodi:role="line"
+         id="tspan36004"
+         style="stroke-width:0.369"
+         x="231.08618"
+         y="94.377853">&quot;Hello&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.369001;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="240.39629"
+       y="65.064697"
+       id="text37606"><tspan
+         sodipodi:role="line"
+         id="tspan37604"
+         style="stroke-width:0.369"
+         x="240.39629"
+         y="65.064697">&quot;Elephant&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.369001;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="234.22639"
+       y="35.360531"
+       id="text40844"><tspan
+         sodipodi:role="line"
+         id="tspan40842"
+         style="stroke-width:0.369"
+         x="234.22639"
+         y="35.360531">&quot;fdflsalfjl&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.369001;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="244.30544"
+       y="122.42728"
+       id="text43158"><tspan
+         sodipodi:role="line"
+         id="tspan43156"
+         style="stroke-width:0.369"
+         x="244.30544"
+         y="122.42728">&quot;Toyota&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.369001;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="223.08255"
+       y="17.307289"
+       id="text49210"><tspan
+         sodipodi:role="line"
+         id="tspan49208"
+         style="stroke-width:0.369"
+         x="223.08255"
+         y="17.307289">Поиск в списке</tspan></text>
+    <g
+       id="g75422"
+       transform="translate(2.0977297,-4.0672773)">
+      <rect
+         style="fill:#d5d5d5;fill-opacity:1;stroke:#000000;stroke-width:0.569;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect61103"
+         width="39.481686"
+         height="12.780214"
+         x="115.45712"
+         y="116.05946" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87777px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.269;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         x="116.54933"
+         y="125.58811"
+         id="text57207"><tspan
+           sodipodi:role="line"
+           id="tspan57205"
+           style="stroke:#000000;stroke-width:0.269;stroke-dasharray:none;stroke-opacity:1"
+           x="116.54933"
+           y="125.58811">Хеш % n</tspan></text>
+    </g>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.969163;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="M 153.55323,72.714855 137.2957,111.99219"
+       id="path66534"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+  </g>
+</svg>

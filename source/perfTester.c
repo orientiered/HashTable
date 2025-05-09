@@ -119,14 +119,14 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
             hashTableBucket_t bucket = ht.buckets[bidx];
             for (size_t idx = 0; idx < bucket.size; idx++) {
                 hashTableNode_t *node = bucket.elements+idx;
-                fprintf(result, "%s %d\n", (const char *)&node->key.MM, *(int *)node->value);
+                fprintf(result, "%s %d\n", (const char *)&node->key.MM, *(int *)getValueFromNode(&ht, node));
             }
         }
 
         hashTableBucket_t bucket = ht.longKeys;
         for (size_t idx = 0; idx < bucket.size; idx++) {
             hashTableNode_t *node = bucket.elements+idx;
-            fprintf(result, "%s %d\n", node->key.Ptr, *(int *)node->value);
+            fprintf(result, "%s %d\n", node->key.Ptr, *(int *)getValueFromNode(&ht, node));
         }
         #else
         for (size_t bidx = 0; bidx < ht.bucketsCount; bidx++) {
