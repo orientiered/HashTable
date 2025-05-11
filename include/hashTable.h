@@ -26,7 +26,7 @@
 #define HASH_TABLE_ARCH 2
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
-// #define FAST_STRCMP
+#define FAST_STRCMP
 
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST
@@ -43,7 +43,7 @@
 #define SSE
 
 /*! Use hardware-optimized hash function                                              */
-// #define FAST_CRC32
+#define FAST_CRC32
 
 # define INLINE_ASM_CRC32
 
