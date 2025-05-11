@@ -79,7 +79,7 @@ $(OBJ_DIR)/main.o: $(SRC_DIR)/main.c $(HDR_DIR)/hashTable.h $(HDR_DIR)/perfTeste
 	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY:clean compile_commands test_file perfTest run dump
+.PHONY:clean compile_commands test_file perfTest run dump perfStat
 
 clean:
 	rm build/* || true
@@ -109,6 +109,10 @@ perfTest:
 # 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
 # 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg
 
+perfStat:
+	sudo perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations \
+	./$(EXEC_NAME) -s
+	
 CPU_TARGET_FREQ_LOW = 5.14GHz
 CPU_TARGET_FREQ_HIGH = 5.14GHz
 

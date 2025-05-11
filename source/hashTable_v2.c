@@ -409,6 +409,7 @@ static hashTableNode_t *bucketSearch(const hashTableBucket_t *bucket, const char
         MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
         #endif
     #else
+        assert( (size_t)key % KEY_ALIGNMENT == 0);
         MMi_t searchKey = _MM_LOAD((const MMi_t *) key);
     #endif
 

@@ -23,20 +23,20 @@
 /* ============================ Optimization defines ================================ */
 
 /*! Hash table architecture version. Read more in README.md */
-#define HASH_TABLE_ARCH 1
+#define HASH_TABLE_ARCH 2
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
-#define FAST_STRCMP
+// #define FAST_STRCMP
 
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST
 
 /*! Assume that passed keys are aligned and have trailing zeros until the end of aligned block */
-// #define ALIGNED_KEYS
-#define ALTERNATIVE_KEY_LOAD
+#define ALIGNED_KEYS
+// #define ALTERNATIVE_KEY_LOAD
 
 /*! Store short values (up to SMALL_STR_LEN bytes) in the node*/
-// #define SHORT_VALUES_IN_NODE
+#define SHORT_VALUES_IN_NODE
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
 //! Note: SSE is fastest 
@@ -45,6 +45,7 @@
 /*! Use hardware-optimized hash function                                              */
 // #define FAST_CRC32
 
+# define INLINE_ASM_CRC32
 
 #ifndef CMP_LEN_FIRST
     #define CMP_LEN_OPT(...)  
@@ -79,7 +80,7 @@ extern "C" {
     #endif
 
 }
-    #ifdef ALIGNED_KEYS
+    #if defined(ALIGNED_KEYS) && defined(INLINE_ASM_CRC32)
         #define _HASH_FUNC FAST_CRC32_2k
     #else
         #define _HASH_FUNC fastCrc32u
