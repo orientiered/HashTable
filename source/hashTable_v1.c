@@ -384,7 +384,11 @@ static hashTableNode_t *hashTableGetBucketAndElement(hashTable_t *table, const c
         *bucketPtr = bucket;
 
 
+    #if defined(FAST_STRCMP) || defined(CMP_LEN_FIRST)
     return bucketSearch(bucket, key, keyLen);
+    #else
+    return bucketSearch(bucket, key, 0);
+    #endif
 }
 
 
@@ -596,7 +600,28 @@ hashTableStatus_t hashTableCalcDistribution(hashTable_t *table)
 }
 
 hashTableStatus_t hashTableDumpDistribution(hashTable_t *table, const char *fileName) {
-    TODO("Implement dump distribution in ARCH 1\n");
+    assert(table);
+    assert(fileName);
+
+    FILE *out = fopen(fileName, "w");
+    if (!out) {
+        errprintf("Failed to open file %s\n", fileName);
+        _ERR_RET(HT_ERROR);
+    }
+
+    for (size_t idx = 0; idx < table->bucketsCount; idx++) {
+        hashTableNode_t *node = table->buckets[idx].next;
+        size_t bucketSize = 0;
+        while (node) {
+            node = node->next;
+            bucketSize++;
+        }
+
+        fprintf(out, "%zu\n", bucketSize);
+    }
+
+    fclose(out);
+
     return HT_SUCCESS;
 }
 
