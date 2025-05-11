@@ -26,14 +26,14 @@
 #define HASH_TABLE_ARCH 1
 
 /*! Uses SIMD optimized strcmp that compares strings up to SMALL_STR_LEN              */
-// #define FAST_STRCMP
+#define FAST_STRCMP
 
 /*! Adds field len in hashTableNode and improves strcmp by comparing length first     */
 // #define CMP_LEN_FIRST
 
 /*! Assume that passed keys are aligned and have trailing zeros until the end of aligned block */
 // #define ALIGNED_KEYS
-// #define ALTERNATIVE_KEY_LOAD
+#define ALTERNATIVE_KEY_LOAD
 
 /*! Store short values (up to SMALL_STR_LEN bytes) in the node*/
 // #define SHORT_VALUES_IN_NODE

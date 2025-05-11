@@ -104,7 +104,7 @@ FLAMEGRAPH_PATH = ~/Utils/FlameGraph/
 perfTest:
 	make clean
 	make BUILD=PERF
-	sudo perf record -g --call-graph dwarf -F $(FREQ) ./$(EXEC_NAME)
+	sudo perf record -g --call-graph dwarf -F $(FREQ) ./$(EXEC_NAME) -s
 # 	sudo perf script | \
 # 	$(FLAMEGRAPH_PATH)stackcollapse-perf.pl | \
 # 	$(FLAMEGRAPH_PATH)flamegraph.pl > ./flame.svg

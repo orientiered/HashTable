@@ -326,22 +326,25 @@ static hashTableNode_t *bucketSearch(hashTableNode_t *bucket, const char *key, c
             }
 
         } else {
+            #if defined(ALTERNATIVE_KEY_LOAD) && defined(SSE)
+            // 16 0xFF and 16 0x00
+            const uint8_t mask[32] = 
+                {255, 255, 255, 255, 255, 255, 255, 255, 
+                255, 255, 255, 255, 255, 255, 255, 255};
+
+            MMi_t searchKey = _mm_loadu_si128((const __m128i_u *) key);
+            MMi_t maskReg   = _mm_loadu_si128((const __m128i_u *) (mask + (16 - keyLen)) );
+            searchKey = _mm_and_si128(searchKey, maskReg);
+
+            #else 
             // Creating local aligned array of chars for key
             alignas(KEY_ALIGNMENT) char keyCopy[SMALL_STR_LEN] = "";
             // Copying key to it
             memcpy(keyCopy, key, keyLen);
             // Loading key to SIMD register
             MMi_t searchKey = _MM_LOAD((MMi_t *) keyCopy);
-
-            // // 16 FF and 16 00
-            // const uint8_t mask[32] = 
-            // {255, 255, 255, 255, 255, 255, 255, 255, 
-            //  255, 255, 255, 255, 255, 255, 255, 255};
-
-            // MMi_t searchKey = _mm_loadu_si128((const __m128i_u *) key);
-            // MMi_t maskReg   = _mm_loadu_si128((const __m128i_u *) (mask + (16 - keyLen)) );
-            // searchKey = _mm_and_si128(searchKey, maskReg);
-
+            #endif
+            
             while (node) {
                 const hashTableNode_t *oldNode = node;
                 //! Alignment of key is guaranteed by aligned_calloc with KEY_ALIGNMENT
