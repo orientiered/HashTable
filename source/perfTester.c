@@ -41,7 +41,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
             for (int idx = 0; idx < requests.wordsCount; idx++) {
                 void *value = hashTableFind(ht, requests.words[idx]);
                 if (value) {
-                    (*(int *)value)++; 
+                    (*(int *)value)++;
                     totalFound++;
                 }
             }
@@ -53,7 +53,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
 
 /* Wrapper for testRequests that loads test data from given files */
 void testPerformance(const char *stringsFile, const char *requestsFile, bool printLess) {
-    
+
     #ifndef ALIGN_USER_KEYS
     text_t (*fileReader)(const char *fileName) =readFileSplitUnaligned;
     #else
@@ -64,7 +64,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
     text_t requests = fileReader(requestsFile);
 
     hashTable ht = {};
-    hashTableCtor(&ht, sizeof(int), 1500);
+    hashTableCtor(&ht, sizeof(int), HASH_TABLE_SIZE);
     HDBG(ht.printElem = printInt;)
 
     codeClock_t clock;
@@ -100,7 +100,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
 
     if (!printLess) {
         fprintf(stderr, "Processed requests in %.2f ms\n", timeInMs);
-        fprintf(stderr, "Avg ticks per search: %.2f\n", avgTicksPerFind); 
+        fprintf(stderr, "Avg ticks per search: %.2f\n", avgTicksPerFind);
 
         fprintf(stderr, "Total requests: %ji, succesfull searches: %ji\n",
                                             requests.wordsCount,                totalFound);
@@ -137,7 +137,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
             }
 
         }
-        
+
         #endif
 
         fclose(result);

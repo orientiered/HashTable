@@ -6,6 +6,7 @@
 #include <time.h>
 
 static const int TEST_LOOPS = 10;
+const int HASH_TABLE_SIZE = 1500;
 
 #define ALIGN_USER_KEYS
 

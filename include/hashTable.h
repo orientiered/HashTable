@@ -39,7 +39,7 @@
 #define SHORT_VALUES_IN_NODE
 
 /*! Which SIMD instruction set is used for fastStrcmp                                 */
-//! Note: SSE is fastest 
+//! Note: SSE is fastest
 #define SSE
 
 /*! Use hardware-optimized hash function                                              */
@@ -48,7 +48,7 @@
 # define INLINE_ASM_CRC32
 
 #ifndef CMP_LEN_FIRST
-    #define CMP_LEN_OPT(...)  
+    #define CMP_LEN_OPT(...)
 #else
     #define CMP_LEN_OPT(...) __VA_ARGS__
 #endif
@@ -63,7 +63,7 @@ hash_t djb2(const void *ptr);
 hash_t crc32(const void *data);
 
 #ifdef FAST_CRC32
-extern "C" { 
+extern "C" {
     hash_t fastCrc32u(const void *data);
     hash_t fastCrc32(const void *data, const size_t len);
 
@@ -75,7 +75,7 @@ extern "C" {
         #define FAST_CRC32_2k fastCrc32_16
     #elif defined(AVX2)
         #define FAST_CRC32_2k fastCrc32_32
-    #elif defined(AVX512) 
+    #elif defined(AVX512)
         #define FAST_CRC32_2k fastCrc32_64
     #endif
 
@@ -140,10 +140,10 @@ typedef struct hashTableBucket {
 } hashTableBucket_t;
 
 typedef struct hashTable {
-    hashTableBucket_t *buckets; ///< Array of buckets 
+    hashTableBucket_t *buckets; ///< Array of buckets
     size_t bucketsCount;        ///< Number of buckets
 
-    hashTableBucket_t longKeys; ///< Separate array for elements with long keys 
+    hashTableBucket_t longKeys; ///< Separate array for elements with long keys
 
     size_t valSize;             ///< Size of data stored in element
     size_t size;                ///< Number of elements
@@ -198,13 +198,13 @@ typedef enum hashTableStatus {
 /*!
     @brief Construct new hashTable
     @param valueSize Size of the data in bytes that correspond to key
-    @param bucketsCount Number of buckets to create in hashTable. In future may become starting number of buckets. 
+    @param bucketsCount Number of buckets to create in hashTable. In future may become starting number of buckets.
 */
 hashTableStatus_t hashTableCtor(hashTable_t *table, size_t valueSize, size_t bucketsCount);
 /// @brief Destruct hashTable and free it's memory
 hashTableStatus_t hashTableDtor(hashTable_t *table);
 
-//! If ALIGNED_KEYS is defined, following functions expect key to be aligned on KEY_ALIGNMENT boundary 
+//! If ALIGNED_KEYS is defined, following functions expect key to be aligned on KEY_ALIGNMENT boundary
 //! and have trailing zeros up to the end of the aligned block
 
 /// @brief Insert element in hashTable or rewrite it's value if already inserted
@@ -224,7 +224,7 @@ void *getValueFromNode(const hashTable_t *table, hashTableNode_t *node);
 /// @brief Check whether table is built correctly
 hashTableStatus_t hashTableVerify(hashTable_t *table);
 
-/// @brief Print dump of given hash table to stderr 
+/// @brief Print dump of given hash table to stderr
 hashTableStatus_t hashTableDump(hashTable_t *table);
 
 /// @brief Calculate disperion of size of buckets and plot graph of it's distribution
