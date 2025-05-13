@@ -20,7 +20,7 @@ void textDtor(text_t *text) {
     free(text->words); text->words = NULL;
     text->wordsCount = text->length = 0;
 }
-    
+
 
 text_t readFileSplitAligned(const char *fileName) {
     text_t result = {0};
@@ -40,8 +40,12 @@ text_t readFileSplitAligned(const char *fileName) {
     // fprintf(stderr, "Len = %ji bytes\n", result.length);
 
     char  *text      = (char*)   calloc( (size_t) result.length + 1, 1); // last byte serves as terminator
-    char **words     = (char **) calloc((size_t) result.length, sizeof(char*));
-    char  *wordsData = (char *)  aligned_alloc(KEY_ALIGNMENT, (size_t) result.length * SMALL_STR_LEN); 
+    miniString_t *words     = (miniString_t *) calloc((size_t) result.length, sizeof(miniString_t));
+    char  *wordsData = (char *)  aligned_alloc(KEY_ALIGNMENT, (size_t) result.length * SMALL_STR_LEN);
+
+    assert(text);
+    assert(words);
+    assert(wordsData);
 
     size_t bytesRead = fread(text, 1, (size_t) result.length, file);
     assert(bytesRead == (size_t) result.length);
@@ -55,7 +59,7 @@ text_t readFileSplitAligned(const char *fileName) {
     textPtr += shift;
 
     while (true) {
-        int wordLen = 0;
+        size_t wordLen = 0;
         while (*(textPtr + wordLen) && !isspace(*(textPtr+wordLen)) ) wordLen++;
         shift = wordLen;
         while(*(textPtr + shift) && isspace(*(textPtr + shift)) ) shift++;
@@ -64,11 +68,13 @@ text_t readFileSplitAligned(const char *fileName) {
             break;
 
 
-        words[wordCount++] = wordsPtr;
+        words[wordCount].data = wordsPtr;
+        words[wordCount++].len = wordLen;
+
         memcpy(wordsPtr, textPtr, wordLen);
 
         int wordsShift = KEY_ALIGNMENT * ((wordLen+1 + KEY_ALIGNMENT - 1) / KEY_ALIGNMENT);
-        memset(wordsPtr + wordLen, 0, wordsShift-wordLen); 
+        memset(wordsPtr + wordLen, 0, wordsShift-wordLen);
         wordsPtr += wordsShift;
 
         textPtr += shift;
@@ -80,9 +86,10 @@ text_t readFileSplitAligned(const char *fileName) {
     free(text);
 
     // shrinking allocated arrays
-    words     = (char **) realloc(words, wordCount * sizeof(char*));
-    // wordsData = (char *)  realloc(wordsData, (size_t)(wordsPtr - wordsData+1) );
+    words     = (miniString_t *) realloc(words, wordCount * sizeof(miniString_t));
+    assert(words);
 
+    // wordsData = (char *)  realloc(wordsData, (size_t)(wordsPtr - wordsData+1) );
     result.wordsCount = wordCount;
     result.data = wordsData;
     result.words = words;
@@ -108,7 +115,7 @@ text_t readFileSplitUnaligned(const char *fileName) {
     fprintf(stderr, "Len = %ji bytes\n", result.length);
 
     char *text = (char*) calloc( (size_t) result.length + 1, 1); // last byte serves as terminator
-    char **words = (char **) calloc( (size_t) result.length, sizeof(char *));
+    miniString_t *words = (miniString_t *) calloc( (size_t) result.length, sizeof(miniString_t));
 
     size_t bytesRead = fread(text, 1, (size_t) result.length, file);
     assert(bytesRead == (size_t) result.length);
@@ -129,7 +136,9 @@ text_t readFileSplitUnaligned(const char *fileName) {
         if (wordLen == 0)
             break;
 
-        words[wordCount++] = textPtr;
+        words[wordCount].data = textPtr;
+        words[wordCount++].len = wordLen;
+
         *(textPtr + wordLen) = '\0';
 
         textPtr += shift;

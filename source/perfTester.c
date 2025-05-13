@@ -39,7 +39,7 @@ int64_t __attribute__ ((noinline)) testRequests(hashTable_t *ht, text_t requests
     MEASURE_TIME(*clock,
         for (int loop = 0; loop < TEST_LOOPS; loop++) {
             for (int idx = 0; idx < requests.wordsCount; idx++) {
-                void *value = hashTableFind(ht, requests.words[idx]);
+                void *value = hashTableFind(ht, requests.words[idx].data, KEYLEN_OPT(requests.words[idx].len) );
                 if (value) {
                     (*(int *)value)++;
                     totalFound++;
@@ -71,7 +71,7 @@ void testPerformance(const char *stringsFile, const char *requestsFile, bool pri
 
     MEASURE_TIME(clock,
         for (int idx = 0; idx < words.wordsCount; idx++) {
-            hashTableAccess(&ht, words.words[idx]); // inserting default values: 0
+            hashTableAccess(&ht, words.words[idx].data); // inserting default values: 0
         }
     )
 

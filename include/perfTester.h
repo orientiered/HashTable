@@ -12,8 +12,14 @@ const int HASH_TABLE_SIZE = 1500;
 
 typedef struct {
     char *data;
+    size_t len;
+} miniString_t;
+
+typedef struct {
+    char *data;
     int64_t length;
-    char **words;
+    miniString_t *words;
+
     int64_t wordsCount;
 } text_t;
 

@@ -45,7 +45,19 @@
 /*! Use hardware-optimized hash function                                              */
 #define FAST_CRC32
 
-# define INLINE_ASM_CRC32
+#define INLINE_ASM_CRC32
+
+#define KNOWN_KEYLEN
+
+#ifndef KNOWN_KEYLEN
+    typedef char * tableKey_t;
+#else
+    typedef struct {
+        char *data;
+        size_t len;
+    } tableKey_t;
+#endif
+
 
 #ifndef CMP_LEN_FIRST
     #define CMP_LEN_OPT(...)
@@ -216,7 +228,7 @@ void *hashTableAccess(hashTable_t *table, const char *key);
 
 /// @brief Find value by key in hash table
 /// @return Ptr to value of NULL if there's no element with given key
-void *hashTableFind(hashTable_t *table, const char *key);
+void *hashTableFind(hashTable_t *table, const char *key KEYLEN_OPT(, const size_t len) );
 
 /// @brief Extract ptr to value from given node of hashTable
 void *getValueFromNode(const hashTable_t *table, hashTableNode_t *node);
